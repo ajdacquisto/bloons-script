@@ -1,11 +1,13 @@
 # BTD6 Macro
 
-This script automates repetitive tasks in Bloons TD 6.
+This project automates Bloons TD 6 using screen-image matching and mouse and
+keyboard input. It is designed for Windows and the screen layout and coordinates
+used by the project.
 
 ## Requirements
 
 - Windows
-- Python 3
+- Python 3.10 or newer
 - Bloons TD 6 running with a screen layout compatible with the hard-coded coordinates in the script
 
 ## Setup
@@ -18,12 +20,19 @@ py -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-## Important
+## Run
 
-`BTD6_Auto_Candy.py` immediately starts controlling the mouse and keyboard and repeats its game automation loop indefinitely. Its coordinates are hard-coded, so it may click or type in the wrong place if your game or display layout differs. Review the script before running it, and only run it when you intend to automate the game. To stop it, press `Ctrl+C` in the terminal running it.
-
-Run it from this directory so it can find `pumpkin.csv`:
+Start Bloons TD 6 and leave it at the home screen, then run:
 
 ```powershell
-python .\BTD6_Auto_Candy.py
+python .\Main.py
 ```
+
+The script begins controlling the mouse and keyboard and repeats its automation
+loop. Press **Caps Lock** to stop it. Review the map-selection and game settings
+in `constant.py` before running. The automation relies on fixed screen
+coordinates and image templates for a 1920x1080 layout, so a different
+resolution, UI scale, or game layout can cause incorrect input.
+
+The `Helper` folder contains the map, page, and strategy data used by the
+automation. Matching templates and reference screenshots are in `Media`.

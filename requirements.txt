@@ -1,4 +1,5 @@
+keyboard
 numpy
-Pillow
-PyAutoGUI
-PyDirectInput
+pillow
+pyautogui
+pydirectinput

@@ -9,9 +9,8 @@ class Location:
         self.x = coordsXY[0]
         self.y = coordsXY[1]
 
-    def __eq__(p1, p2):
-        # return p1.getName() == p2.getName() and p1.getX() == p2.getX() and p1.getY() == p2.getY()
-        return p1.name == p2.name and p1.x == p2.x and p1.y == p2.y
+    def __eq__(self, p2):
+        return self.name == p2.name and self.x == p2.x and self.y == p2.y
 
     def getName(self):  # pylint: disable=invalid-name
         """Return the location name as text."""

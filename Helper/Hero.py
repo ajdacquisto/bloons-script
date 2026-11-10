@@ -10,8 +10,8 @@ class Hero:
         self.name = name
         self.row, self.col = bCoords
 
-    def __eq__(h1, h2) -> bool:
-        return h1.name == h2.name
+    def __eq__(self, h2) -> bool:
+        return self.name == h2.name
 
     def __str__(self) -> str:
         return "Hero: " + str(self.name)

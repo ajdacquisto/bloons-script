@@ -13,10 +13,10 @@ class Action(Generic[_InfoT]):
         self.name = name  # 'Tower' 'Wait' 'Ability' 'Start'
         self.info = info  # list of Tower, or Integer, or String
 
-    def __eq__(a1, a2) -> bool:
-        if a1.name != a2.name:
+    def __eq__(self, a2) -> bool:
+        if self.name != a2.name:
             return False
-        return a1.info == a2.info
+        return self.info == a2.info
 
     def __str__(self) -> str:
         return str(self.name) + ": " + str(self.info)

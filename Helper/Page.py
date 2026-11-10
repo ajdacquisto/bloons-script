@@ -22,8 +22,8 @@ class Page:
         ps += ", dotC=(" + str(self.dot_coords[0]) + "," + str(self.dot_coords[1]) + ")"
         return ps
 
-    def __eq__(p1, p2) -> bool:
-        return p1.number == p2.number
+    def __eq__(self, p2) -> bool:
+        return self.number == p2.number
 
     def get_number(self) -> int:
         """Return the page number."""

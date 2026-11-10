@@ -8,6 +8,7 @@ from PIL import Image
 
 import Main
 from Helper import GUI, ImageGrabTest, KeyboardInput, Location, Map, Page
+from Helper.Action import Action
 from Helper.Hero import Hero
 from Helper.Tower import Tower
 
@@ -17,6 +18,17 @@ ROOT = Path(__file__).resolve().parent.parent
 
 class ExistingBehaviorTests(unittest.TestCase):
     """Keep legacy keyword arguments and automation behavior intact."""
+
+    def test_model_equality_rules(self):
+        """Action, hero, location, and page comparisons keep their existing rules."""
+        self.assertEqual(Action("WaitSec", 1), Action("WaitSec", 1))
+        self.assertNotEqual(Action("WaitSec", 1), Action("WaitSec", 2))
+        self.assertEqual(Hero("Quincy", (0, 0)), Hero("Quincy", (1, 1)))
+        self.assertNotEqual(Hero("Quincy", (0, 0)), Hero("Psi", (0, 0)))
+        self.assertEqual(Location.Location("A", (1, 2)), Location.Location("A", (1, 2)))
+        self.assertNotEqual(Location.Location("A", (1, 2)), Location.Location("A", (2, 1)))
+        self.assertEqual(Page.Page(1, 0, 0, (0, 0)), Page.Page(1, 3, 1, (1, 1)))
+        self.assertNotEqual(Page.Page(1, 0, 0, (0, 0)), Page.Page(2, 0, 0, (0, 0)))
 
     def test_map_and_page_data_load_through_legacy_keywords(self):
         """The existing data files and public keyword names still work."""

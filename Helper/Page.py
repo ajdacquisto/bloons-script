@@ -1,7 +1,11 @@
+"""Represent pages and controls on the map-selection screen."""
+
 from typing import Tuple, List
 
 
 class Page:
+    """Describe one map-selection page and its navigation coordinates."""
+
     def __init__(
         self, number: int, diff: int, subpage: int, dot_coords: Tuple[int, int]
     ):
@@ -22,22 +26,28 @@ class Page:
         return p1.number == p2.number
 
     def get_number(self) -> int:
+        """Return the page number."""
         return self.number
 
     def get_difficulty(self) -> int:
+        """Return the map difficulty represented by this page."""
         return self.difficulty
 
     def get_subpage(self) -> int:
+        """Return the page index within its difficulty."""
         return self.subset_num
 
     def get_dot_coords(self) -> Tuple[int, int]:
+        """Return the page indicator coordinates."""
         return self.dot_coords
 
     def get_button_coords(self) -> Tuple[int, int]:
+        """Return the stored difficulty-button coordinates."""
         return self.button_coords
 
 
 def get_pages(filename: str) -> List[Page]:
+    """Load page definitions from a comma-separated data file."""
     with open(filename, "r") as f:
         line = f.readline()
         list_of_pages = []
@@ -48,15 +58,15 @@ def get_pages(filename: str) -> List[Page]:
                     line = line[:-1]
 
                 # Create a list from comma separated items
-                lineList = line.split(",")
+                line_list = line.split(",")
 
-                p_number = int(lineList[0])
-                p_difficulty = int(lineList[1])
-                p_subpage = int(lineList[2])
-                p_dotX = int(lineList[3])
-                p_dotY = int(lineList[4])
+                p_number = int(line_list[0])
+                p_difficulty = int(line_list[1])
+                p_subpage = int(line_list[2])
+                p_dot_x = int(line_list[3])
+                p_dot_y = int(line_list[4])
 
-                p_dot_coords = (p_dotX, p_dotY)
+                p_dot_coords = (p_dot_x, p_dot_y)
 
                 p = Page(p_number, p_difficulty, p_subpage, p_dot_coords)
 
@@ -67,7 +77,8 @@ def get_pages(filename: str) -> List[Page]:
     return list_of_pages
 
 
-def get_page_by_info(pageList: List[Page], diff: int, subpage: int) -> Page:
+def get_page_by_info(pageList: List[Page], diff: int, subpage: int) -> Page:  # pylint: disable=invalid-name
+    """Find a page by difficulty and subpage, or return None."""
     try:
         if diff != int(diff):
             raise TypeError()
@@ -84,22 +95,24 @@ def get_page_by_info(pageList: List[Page], diff: int, subpage: int) -> Page:
 
 
 def get_next_in_diff(p: Page) -> Page:
-    N = get_num_subpages(p.difficulty)
-    S = p.subset_num
+    """Find the next subpage within the current difficulty."""
+    page_count = get_num_subpages(p.difficulty)
+    subpage = p.subset_num
 
-    lastSubpage = N - 1
+    last_subpage = page_count - 1
 
-    if S < 0:
+    if subpage < 0:
         raise RuntimeError("get_next_in_diff: Negative current subpage number")
-    if S + 1 <= lastSubpage:
-        newSubpage = S + 1
-    elif S + 1 > lastSubpage:
-        newSubpage = 0
+    if subpage + 1 <= last_subpage:
+        new_subpage = subpage + 1
+    elif subpage + 1 > last_subpage:
+        new_subpage = 0
 
-    return get_page_by_info(p.difficulty, newSubpage)
+    return get_page_by_info(p.difficulty, new_subpage)
 
 
 def get_num_subpages(diff: int) -> int:
+    """Return the number of subpages for a map difficulty."""
     if diff == 0:
         return 4
     elif diff == 1:
@@ -113,6 +126,7 @@ def get_num_subpages(diff: int) -> int:
 
 
 def get_button_coords(diff: int) -> Tuple[int, int]:
+    """Return the difficulty tab's screen coordinates."""
     match diff:
         case 0:
             return (582, 977)
@@ -124,7 +138,8 @@ def get_button_coords(diff: int) -> Tuple[int, int]:
             return (1338, 977)
 
 
-def get_dot_coord_list(pageList: List[Page]) -> Tuple[int, int]:
+def get_dot_coord_list(pageList: List[Page]) -> Tuple[int, int]:  # pylint: disable=invalid-name
+    """Return the screen coordinates of the supplied page indicators."""
     c_list = []
     for p in pageList:
         c_list.append(p.dot_coords)

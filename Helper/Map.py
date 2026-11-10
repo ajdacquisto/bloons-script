@@ -1,14 +1,17 @@
+"""Load maps and define the strategies used to play them."""
+
+from random import randint
+from typing import List
+
 from Helper.Hero import Hero
 from Helper.Location import Location, getLoc
 from Helper.Action import Action
 from Helper.Strategy import Strategy
 from Helper.Tower import Tower
 
-from random import randint
-from typing import List
-
-
 class Map:
+    """Describe a map's menu location and available strategies."""
+
     HEROES = [
         Hero("Quincy", (0, 0)),
         Hero("Gwendolin", (0, 1)),
@@ -44,31 +47,39 @@ class Map:
         self.strategy = strategy  # type: Strategy
 
     def get_name(self) -> str:
+        """Return the map name."""
         return self.name
 
     def get_difficulty(self) -> int:
+        """Return the map difficulty category."""
         return self.difficulty
 
     def get_subpage(self) -> int:
+        """Return the map's subpage within its category."""
         return self.subpage
 
     def get_page(self) -> int:
+        """Return the map-selection page number."""
         return self.page
 
     def get_page_location(self) -> Location:
+        """Return the map-card location on its page."""
         return self.page_location
 
     def get_strategy(self) -> Strategy:
+        """Return the stored strategies."""
         return self.strategy
 
     def get_strategy_from_mode(self, game_diff: int, game_mode: str) -> Strategy:
+        """Find a strategy matching a game difficulty and mode."""
         for s in self.strategy:
             if game_diff == s.get_game_difficulty() and game_mode == s.get_game_mode():
                 return s
         return None
 
 
-def map_setup(dataFilePath: str) -> List[Map]:
+def map_setup(dataFilePath: str) -> List[Map]:  # pylint: disable=invalid-name
+    """Load map locations and attach the corresponding strategies."""
     with open(dataFilePath, "r") as f:
         line = f.readline()
         list_of_maps = []
@@ -79,16 +90,16 @@ def map_setup(dataFilePath: str) -> List[Map]:
                     line = line[:-1]
 
                 # Create a list from comma separated items
-                lineList = line.split(",")
+                line_list = line.split(",")
 
-                m_name = lineList[0]
-                m_diff = int(lineList[1])
-                m_page = int(lineList[2])
-                m_subpage = int(lineList[3])
-                m_locName = lineList[4]
-                m_locNum = int(lineList[5])
+                m_name = line_list[0]
+                m_diff = int(line_list[1])
+                m_page = int(line_list[2])
+                m_subpage = int(line_list[3])
+                m_loc_name = line_list[4]
+                m_loc_num = int(line_list[5])
 
-                m_location = getLoc(m_locName)
+                m_location = getLoc(m_loc_name)
 
                 if m_location is None:
                     raise Exception("Location not found.")
@@ -105,12 +116,14 @@ def map_setup(dataFilePath: str) -> List[Map]:
 
 
 def get_map_by_name(map_list: List[Map], map_name: str) -> Map:
+    """Find a map by name, or return None."""
     for m in map_list:
         if m.name == map_name:
             return m
 
 
 def pick_rand(map_list: List[Map]) -> Map:
+    """Choose a random map from the supplied list."""
     n = len(map_list)
     a = randint(0, n - 1)
     return map_list[a]
@@ -119,6 +132,7 @@ def pick_rand(map_list: List[Map]) -> Map:
 def get_map_from_location(
     map_list: List[Map], page_num: int, page_location_given: Location
 ) -> Map:
+    """Find the map at a given page and map-card location."""
     for m in map_list:
         if m.page == page_num:
             if m.page_location == page_location_given:
@@ -127,6 +141,7 @@ def get_map_from_location(
 
 
 def get_hero(hero_name: str) -> Hero:
+    """Find a hero by name."""
     for h in Map.HEROES:
         if h.name == hero_name:
             return h
@@ -134,6 +149,7 @@ def get_hero(hero_name: str) -> Hero:
 
 
 def get_strategy(m: Map) -> List[Strategy]:
+    """Build the available strategies for the supplied map."""
     if m.name == "Dark Dungeons":
         action_list_defl = [
             Action(

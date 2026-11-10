@@ -1,9 +1,14 @@
-from Helper.Hero import Hero
-from Helper.Action import Action
+"""Describe strategies for playing individual maps."""
+
 from typing import List
+
+from Helper.Action import Action
+from Helper.Hero import Hero
 
 
 class Strategy:
+    """Store the game settings, hero, and actions for a strategy."""
+
     def __init__(
         self, game_difficulty: int, game_mode: str, hero: Hero, actions: List[Action]
     ):
@@ -31,13 +36,17 @@ class Strategy:
         return f"S[diff={d},mode={m},hero={h},actions={action_list_str}]"
 
     def get_game_difficulty(self) -> int:
+        """Return the game difficulty."""
         return self.game_difficulty
 
     def get_game_mode(self) -> str:
+        """Return the game mode."""
         return self.game_mode
 
     def get_hero(self) -> Hero:
+        """Return the selected hero."""
         return self.hero
 
     def get_actions(self) -> List[Action]:
+        """Return the ordered strategy actions."""
         return self.actions

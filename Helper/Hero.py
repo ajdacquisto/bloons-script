@@ -1,8 +1,12 @@
+"""Represent heroes and their positions on the selection screen."""
+
 from typing import Tuple, List
 
 
 class Hero:
-    def __init__(self, name: str, bCoords: Tuple[int, int]) -> None:
+    """Describe a hero and the row and column of its selection button."""
+
+    def __init__(self, name: str, bCoords: Tuple[int, int]) -> None:  # pylint: disable=invalid-name
         self.name = name
         self.row, self.col = bCoords
 
@@ -13,17 +17,19 @@ class Hero:
         return "Hero: " + str(self.name)
 
     def get_name(self) -> str:
+        """Return the hero's name."""
         return self.name
 
     def get_coords(self) -> Tuple[int, int]:
-        HORIZ_ADJUST = 100
-        HORIZ_SCALING = 150
+        """Return the hero button's screen coordinates."""
+        horiz_adjust = 100
+        horiz_scaling = 150
 
-        VERT_ADJUST = 200
-        VERT_SCALING = 200
+        vert_adjust = 200
+        vert_scaling = 200
 
-        x = self.col * HORIZ_SCALING + HORIZ_ADJUST
-        y = self.row * VERT_SCALING + VERT_ADJUST
+        x = self.col * horiz_scaling + horiz_adjust
+        y = self.row * vert_scaling + vert_adjust
         return (x, y)
 
 

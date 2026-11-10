@@ -1,3 +1,5 @@
+"""Store runtime settings, project paths, and image-match thresholds."""
+
 import os
 from pathlib import Path
 
@@ -12,12 +14,14 @@ MATCHES_FILE = HELPER_DIR / "data.txt"
 
 
 def set_matches(number_list):
+    """Write all image-match thresholds to the data file."""
     new_string = ",".join(str(num) for num in number_list)
     with MATCHES_FILE.open("w") as f:
         f.write(new_string)
 
 
 def get_matches():
+    """Read the stored image-match thresholds."""
     with MATCHES_FILE.open("r") as f:
         contents = f.read()
         contents = contents.split(",")
@@ -27,6 +31,7 @@ def get_matches():
 
 
 def set_match(i, j, do_reporting=False):
+    """Update one stored match threshold, optionally reporting the change."""
     j = round(j - 0.0001, 4)
     this_list = get_matches()
     if do_reporting:
@@ -36,11 +41,13 @@ def set_match(i, j, do_reporting=False):
 
 
 def get_match(i):
+    """Return one stored match threshold."""
     this_list = get_matches()
     return this_list[i]
 
 
 def init():
+    """Initialize runtime settings and load map and page data."""
     # Settings
     # ---
 

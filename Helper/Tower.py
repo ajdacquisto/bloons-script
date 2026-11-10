@@ -1,4 +1,9 @@
+"""Represent tower placements, upgrades, and targeting."""
+
+
 class Tower:
+    """Store the input needed for one tower action."""
+
     HOTKEYS = {
         "Dart Monkey": "q",
         "Boomerang Monkey": "w",
@@ -34,13 +39,16 @@ class Tower:
         self.targeting = targeting
         self.hotkey = self.HOTKEYS[self.name]
         self.towers = []
-        self.delayTime = 0
+        self.delayTime = 0  # pylint: disable=invalid-name
 
     def get_hotkey(self):
+        """Return the hotkey associated with this tower action."""
         return self.hotkey
 
     def get_position(self):
+        """Return the tower's screen position."""
         return self.position
 
     def get_upgrades(self):
+        """Return the upgrades to apply on each path."""
         return self.upgrades

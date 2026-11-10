@@ -1,3 +1,5 @@
+"""Send Windows keyboard scan codes through the native input API."""
+
 import ctypes
 
 PUL = ctypes.POINTER(ctypes.c_ulong)
@@ -5,6 +7,8 @@ SendInput = ctypes.windll.user32.SendInput
 
 
 class KeyBdInput(ctypes.Structure):
+    """Windows keyboard input structure."""
+
     _fields_ = [
         ("wVk", ctypes.c_ushort),
         ("wScan", ctypes.c_ushort),
@@ -15,6 +19,8 @@ class KeyBdInput(ctypes.Structure):
 
 
 class HardwareInput(ctypes.Structure):
+    """Windows hardware input structure."""
+
     _fields_ = [
         ("uMsg", ctypes.c_ulong),
         ("wParamL", ctypes.c_short),
@@ -23,6 +29,8 @@ class HardwareInput(ctypes.Structure):
 
 
 class MouseInput(ctypes.Structure):
+    """Windows mouse input structure."""
+
     _fields_ = [
         ("dx", ctypes.c_long),
         ("dy", ctypes.c_long),
@@ -33,15 +41,20 @@ class MouseInput(ctypes.Structure):
     ]
 
 
-class Input_I(ctypes.Union):
+class Input_I(ctypes.Union):  # pylint: disable=invalid-name
+    """Union of the native Windows input structures."""
+
     _fields_ = [("ki", KeyBdInput), ("mi", MouseInput), ("hi", HardwareInput)]
 
 
 class Input(ctypes.Structure):
+    """Windows input structure containing a type and input union."""
+
     _fields_ = [("type", ctypes.c_ulong), ("ii", Input_I)]
 
 
-def PressKey(hexKeyCode):
+def PressKey(hexKeyCode):  # pylint: disable=invalid-name
+    """Send a key-down event for the given scan code."""
     extra = ctypes.c_ulong(0)
     ii_ = Input_I()
     ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008, 0, ctypes.pointer(extra))
@@ -49,7 +62,8 @@ def PressKey(hexKeyCode):
     ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
 
 
-def ReleaseKey(hexKeyCode):
+def ReleaseKey(hexKeyCode):  # pylint: disable=invalid-name
+    """Send a key-up event for the given scan code."""
     extra = ctypes.c_ulong(0)
     ii_ = Input_I()
     ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008 | 0x0002, 0, ctypes.pointer(extra))

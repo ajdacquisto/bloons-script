@@ -1,5 +1,10 @@
+"""Represent map-card locations on the selection screen."""
+
+
 class Location:
-    def __init__(self, name_val, coordsXY):
+    """Store the name and screen coordinates of a map-card location."""
+
+    def __init__(self, name_val, coordsXY):  # pylint: disable=invalid-name
         self.name = name_val
         self.x = coordsXY[0]
         self.y = coordsXY[1]
@@ -8,43 +13,51 @@ class Location:
         # return p1.getName() == p2.getName() and p1.getX() == p2.getX() and p1.getY() == p2.getY()
         return p1.name == p2.name and p1.x == p2.x and p1.y == p2.y
 
-    def getName(self):
+    def getName(self):  # pylint: disable=invalid-name
+        """Return the location name as text."""
         return str(self.name)
 
-    def getX(self):
+    def getX(self):  # pylint: disable=invalid-name
+        """Return the horizontal screen coordinate."""
         return self.x
 
-    def getY(self):
+    def getY(self):  # pylint: disable=invalid-name
+        """Return the vertical screen coordinate."""
         return self.y
 
     def info(self):
+        """Return the coordinates and name."""
         return (self.x, self.y, self.name)
 
 
-def getLoc(locName):
-    for l in LOCATIONS:
-        if l.name == locName:
-            return l
+def getLoc(locName):  # pylint: disable=invalid-name
+    """Find a location by its name, or return None."""
+    for location in LOCATIONS:
+        if location.name == locName:
+            return location
 
 
 def get_coord_list():
-    coordList = []
-    for L in LOCATIONS:
-        coordList.append((L.x, L.y))
-    return coordList
+    """Return the coordinates of all known map-card locations."""
+    coord_list = []
+    for location in LOCATIONS:
+        coord_list.append((location.x, location.y))
+    return coord_list
 
 
-def get_loc_from_coords(C):
+def get_loc_from_coords(C):  # pylint: disable=invalid-name
+    """Find a location by its coordinates, or return None."""
     x, y = C
-    for L in LOCATIONS:
-        if L.x == x and L.y == y:
-            return L
+    for location in LOCATIONS:
+        if location.x == x and location.y == y:
+            return location
     return None
 
 
-def get_loc_num(inp_L):
-    for i, L in enumerate(LOCATIONS):
-        if L.getName() == inp_L.getName():
+def get_loc_num(inp_L):  # pylint: disable=invalid-name
+    """Return the index of a named location, or -1 if it is absent."""
+    for i, location in enumerate(LOCATIONS):
+        if location.getName() == inp_L.getName():
             return i
     return -1
 

@@ -12,17 +12,16 @@ class Strategy:
         self.hero = hero  # Hero type
         self.actions = actions  # [Action, Action, ...]
 
-    def __eq__(s1, s2) -> bool:
-        if s1.get_game_difficulty() != s2.get_game_difficulty():
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Strategy):
+            return NotImplemented
+        if self.get_game_difficulty() != other.get_game_difficulty():
             return False
-        if s1.get_game_mode() != s2.get_game_mode():
+        if self.get_game_mode() != other.get_game_mode():
             return False
-        if s1.get_hero() != s2.get_hero():
+        if self.get_hero() != other.get_hero():
             return False
-        for ac1, ac2 in zip(s1.get_actions(), s2.get_actions()):
-            if ac1 != ac2:
-                return False
-        return True
+        return self.get_actions() == other.get_actions()
 
     def __str__(self) -> str:
         action_list_str = "(" + ",".join(str(a) for a in self.actions) + ")"

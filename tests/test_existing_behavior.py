@@ -48,6 +48,24 @@ class ExistingBehaviorTests(unittest.TestCase):
             page = pages[m.page]
             self.assertEqual((page.difficulty, page.subset_num), (m.difficulty, m.subpage))
 
+    def test_home_screen_wait_preserves_cancellation(self):
+        """Stopping at startup is not misreported as a detection timeout."""
+        with (
+            patch.object(Main.const, "init"),
+            patch.object(Main.const, "MAPS", [], create=True),
+            patch.object(Main.const, "POST_WIN_WAIT", 0, create=True),
+            patch.object(Main.const, "MAP_LOADING_TIME", 0, create=True),
+            patch.object(Main.const, "DEFAULT_MAP", "Tricky Tracks", create=True),
+            patch.object(Main.const, "DEFAULT_MODE", "Deflation", create=True),
+            patch.object(Main.const, "MAP_SELECTION_MODE", 0, create=True),
+            patch.object(Main.const, "FILE_PREFIX", "", create=True),
+            patch.object(GUI, "check_input_vars"),
+            patch.object(GUI, "wait_click"),
+            patch.object(Main, "wait_for_badge", side_effect=SystemExit),
+        ):
+            with self.assertRaises(SystemExit):
+                Main.main()
+
     def test_subpage_counts_follow_loaded_data(self):
         """Counts follow the data, including future pages above subpage three."""
         pages = Page.get_pages(str(ROOT / "Helper" / "pageInfo.dat"))
@@ -201,7 +219,7 @@ class ExistingBehaviorTests(unittest.TestCase):
             GUI.play_button(waitTime=0)
             GUI.select_hero(H=hero)
 
-        self.assertEqual(wait_click.call_args_list, [call(0, 833, 936), call(0.5, 400, 400)])
+        self.assertEqual(wait_click.call_args_list, [call(0, 960, 945), call(0.5, 400, 400)])
 
     def test_validate_map_settings(self):
         """Valid settings pass while invalid waits are rejected."""
@@ -222,7 +240,7 @@ class ExistingBehaviorTests(unittest.TestCase):
             self.assertIs(Main.identify_current_page(), pages[11])
 
         locate.assert_called_once_with(
-            "mapDot.png", Page.get_dot_coord_list(pages), 0, [0.08], 0, 1
+            "mapDot.png", Page.get_dot_coord_list(pages), 1, [0.85], 0, 1
         )
 
     def test_wait_for_badge_uses_legacy_coordinate_keyword(self):
@@ -255,6 +273,45 @@ class ExistingBehaviorTests(unittest.TestCase):
             self.assertEqual(Main.const.AUTO_START, 1)
             Main.toggle_auto_start()
             self.assertEqual(Main.const.AUTO_START, 0)
+
+    def test_auto_start_templates_distinguish_both_states(self):
+        """Current switch templates detect ON and OFF without confusing them."""
+        for state, filename in ((0, "autoStartOff.png"), (1, "autoStartOn.png")):
+            with self.subTest(state=state):
+                with Image.open(ROOT / "Media" / filename) as template:
+                    screen = Image.new("RGB", (1920, 1080))
+                    screen.paste(template, (1265, 272))
+                with (
+                    patch.object(Main.const, "FILE_PREFIX", str(ROOT / "Media") + "\\",
+                                 create=True),
+                    patch.object(ImageGrabTest.ImageGrab, "grab", return_value=screen),
+                ):
+                    self.assertEqual(Main.check_auto_start(), state)
+
+    def test_auto_start_check_preserves_cancellation(self):
+        """Caps Lock cancellation propagates through auto-start detection."""
+        with (
+            patch.object(Main.const, "FILE_PREFIX", "", create=True),
+            patch.object(Main, "wait_for_badge_2", side_effect=SystemExit),
+        ):
+            with self.assertRaises(SystemExit):
+                Main.check_auto_start()
+
+    def test_auto_start_adjustment_opens_and_closes_pause(self):
+        """Deflation needs ON; Standard needs OFF; only mismatched states toggle."""
+        for mode, target in (("Deflation", 1), ("Standard", 0)):
+            for current in (0, 1):
+                with (
+                    self.subTest(mode=mode, current=current),
+                    patch.object(Main.const, "AUTO_START", -1, create=True),
+                    patch.object(Main, "check_auto_start", return_value=current),
+                    patch.object(GUI, "key_push") as key_push,
+                    patch.object(GUI, "auto_start_toggle_switch") as toggle,
+                ):
+                    Main.adjust_auto_start_smart(mode)
+                    self.assertEqual(Main.const.AUTO_START, target)
+                    self.assertEqual(key_push.call_args_list, [call("esc"), call("esc")])
+                    self.assertEqual(toggle.call_count, int(current != target))
 
     def test_map_navigation_wraps_within_difficulty(self):
         """Moving from the last subpage to the first takes one click."""

@@ -5,12 +5,27 @@ from pathlib import Path
 
 from Helper.Map import map_setup
 from Helper.Page import get_pages
+from Helper.UICalibration import UI_CLICKS, UI_TARGETS as UI_TARGETS
 
 
 PROJECT_DIR = Path(__file__).resolve().parent
 HELPER_DIR = PROJECT_DIR / "Helper"
 MEDIA_DIR = PROJECT_DIR / "Media"
 MATCHES_FILE = HELPER_DIR / "data.txt"
+# Compatibility alias; edit the shared calibration rather than this value.
+HOME_PLAY_COORDS: tuple[int, int] = UI_CLICKS["home_play"]
+LOG_LEVEL = "INFO"
+VISION_POLL_INTERVAL = 0.2
+VISION_LOG_INTERVAL = 3.0
+
+# Desktop position of the game display's top-left corner; monitor 2: (-1920, 290).
+GAME_SCREEN_ORIGIN: tuple[int, int] = (0, 0)
+
+
+def get_desktop_coords(x: int, y: int) -> tuple[int, int]:
+    """Translate game-local coordinates to desktop coordinates."""
+    origin_x, origin_y = GAME_SCREEN_ORIGIN
+    return x + origin_x, y + origin_y
 
 
 def set_matches(number_list):

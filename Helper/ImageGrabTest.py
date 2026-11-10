@@ -5,6 +5,8 @@ from pathlib import Path
 from PIL import ImageGrab, Image, ImageChops
 from numpy import asarray
 
+import constant as const
+
 
 def image_to_arr(im):
     """Convert a Pillow image to a NumPy array."""
@@ -55,7 +57,10 @@ def locate(
         thresh_list = thresh_list * n
 
     src_img = Image.open(filename)  # Load source image
-    screen_img = ImageGrab.grab()  # Take a screenshot
+    left, top = const.get_desktop_coords(0, 0)
+    screen_img = ImageGrab.grab(
+        bbox=(left, top, left + 1920, top + 1080), all_screens=True
+    )
 
     best_info = (-1, False, (0, 0), 0)
     # index, meetsReqt, coords, ratio

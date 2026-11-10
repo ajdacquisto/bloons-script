@@ -5,13 +5,40 @@
 
 # Caps lock is the quit key
 
+import logging
 import time
-
-import pyautogui as pg
+from pathlib import Path
+from collections.abc import Sequence
 
 import constant as const
 from Helper import GUI, Location, Map, Page
 from Helper.ImageGrabTest import locate
+
+
+LOGGER = logging.getLogger(__name__)
+
+
+def wait_for_ui(name, timeout, coords=None):
+    """Wait for a centrally calibrated target, optionally at data-driven locations."""
+    target = const.UI_TARGETS[name]
+    return wait_for_badge(
+        const.FILE_PREFIX + target.filename,
+        [target.coords] if coords is None else coords,
+        timeout, [target.threshold], search_radius=target.radius, label=name,
+    )
+
+
+def wait_for_ui_any(names, timeout):
+    """Wait for calibrated alternatives and return the matched target's index."""
+    targets = [const.UI_TARGETS[name] for name in names]
+    return wait_for_badge_2(
+        [const.FILE_PREFIX + target.filename for target in targets],
+        [[target.coords] for target in targets],
+        timeout,
+        thresholds=[[target.threshold] for target in targets],
+        search_radii=[target.radius for target in targets],
+        labels=list(names),
+    )
 
 
 def navigate(p, log=False):
@@ -23,6 +50,8 @@ def navigate(p, log=False):
     target_subpage = p.subset_num
 
     current_page = identify_current_page(log)
+    LOGGER.info("Navigating: page %s -> %s (difficulty %s, subpage %s)",
+                current_page.number, p.number, p.difficulty, p.subset_num)
     if log:
         print(f"Trying to reach: {str(p)}")
 
@@ -60,27 +89,12 @@ def navigate(p, log=False):
 
 def identify_current_page(log=False):
     """Identify the active map-selection page from its indicator."""
-    search_radius = 0
-    search_mode = 0
-    rounding = 1
-    threshold = [0.08]
-    filename = const.FILE_PREFIX + "mapDot.png"
+    target = const.UI_TARGETS["map_dot"]
     coord_list = Page.get_dot_coord_list(const.PAGES)
-    timeout = 2  # seconds
-    match_found = False
-    match_found, match_coords, match_percent = locate(
-        filename, coord_list, search_radius, threshold, search_mode, rounding
+    _, match_coords = _wait_for_matches(
+        [const.FILE_PREFIX + target.filename], [coord_list], 2,
+        [[target.threshold]], [target.radius], ["map_dot"],
     )
-
-    start_time = time.time()
-    while (not match_found) and abs(time.time() - start_time) <= timeout:
-        GUI.exit_key_check()
-        match_found, match_coords, match_percent = locate(
-            filename, coord_list, search_radius, threshold, search_mode, rounding
-        )
-
-    if not match_found:
-        raise Exception("identify_current_page: Unable to identify current page.")
 
     for p in const.PAGES:
         if p.dot_coords == match_coords:
@@ -97,6 +111,10 @@ def beat_map(m) -> None:
 
     # Use rules to select the strategy to use.
     strategy_to_use = select_strategy(m)
+    if strategy_to_use is None:
+        raise ValueError(f"No strategy defined for {m.name}")
+    LOGGER.info("Playing %s: %s, hero %s", m.name,
+                strategy_to_use.get_game_mode(), strategy_to_use.get_hero().get_name())
 
     # According to strategy: select the hero, difficulty, & gamemode
     GUI.select_hero(strategy_to_use.get_hero())
@@ -149,8 +167,8 @@ def adjust_auto_start_smart(target_game_mode: str) -> None:
         GUI.key_push("esc")
         try:
             const.AUTO_START = check_auto_start(10)
-        except TimeoutError:
-            raise RuntimeError("Unkown auto-start setting state.")
+        except TimeoutError as exc:
+            raise RuntimeError("Unknown auto-start setting state.") from exc
         if (target_game_mode == "Deflation" and const.AUTO_START == 0) or (
             target_game_mode == "Standard" and const.AUTO_START == 1
         ):
@@ -190,37 +208,19 @@ def select_strategy(m):
 
 def select_gamemode_smart(mode):
     """Wait for and select the requested game mode."""
-    match mode:
-        case "Deflation":
-            # Check for deflation option before clicking there.
-            try:
-                wait_for_badge(
-                    const.FILE_PREFIX + "modeDeflation.png", [(1322, 486)], 3
-                )
-            except:
-                raise Exception("Deflation mode not found. Timed out.")
-            GUI.wait_click(0, 1293, 475)  # Deflation button
-        case "Standard":
-            # Check for standard option before clicking there.
-            try:
-                wait_for_badge(const.FILE_PREFIX + "modeStandard.png", [(667, 584)], 3)
-            except:
-                raise Exception("Standard mode not found. Timed out.")
-            GUI.wait_click(0, 634, 587)  # Standard button
-        case _:
-            raise ValueError("select_gamemode: Invalid gamemode.")
+    if mode not in ("Deflation", "Standard"):
+        raise ValueError("select_gamemode: Invalid gamemode.")
+    name = mode.lower()
+    wait_for_ui(name, 3)
+    GUI.wait_click(0, *const.UI_CLICKS[name])
 
 
 def select_difficulty_smart(diff):
     """Wait for and select the requested game difficulty."""
     match diff:
         case 0:
-            # Check for easy option before clicking there.
-            try:
-                wait_for_badge(const.FILE_PREFIX + "selectEasy.png", [(627, 406)], 3)
-            except:
-                raise Exception("Easy option not found. Timed out.")
-            GUI.wait_click(0, 618, 417)  # Easy button
+            wait_for_ui("easy", 3)
+            GUI.wait_click(0, *const.UI_CLICKS["easy"])
         case _:
             raise ValueError("select_difficulty: Invalid difficulty.")
 
@@ -229,22 +229,21 @@ def overwrite_save_smart(timeout=1.5):
     """Overwrite an existing save when the prompt appears."""
     # Check for saved game, & overwrite if necessary
     try:
-        wait_for_badge(const.FILE_PREFIX + "overwriteBadge.png", [(570, 379)], timeout)
-    except:
-        pass  # No overwrite required
+        wait_for_ui("overwrite", timeout)
+    except TimeoutError:
+        LOGGER.info("No overwrite prompt detected; continuing")
     else:
-        GUI.wait_click(0, 1137, 729)  # Overwrite Save
+        GUI.wait_click(0, *const.UI_CLICKS["overwrite"])
 
 
 def map_loading_wait(timeout=20, post_load_wait=0.8):
     """Wait for the map-loaded prompt and dismiss it."""
     # Check for map to be loaded.
     try:
-        wait_for_badge(const.FILE_PREFIX + "loaded2.png", [(960, 392)], timeout)
-    except:
-        print("Map loaded screen not found. Timed out.")
-        raise RuntimeError
-    GUI.wait_click(0, 969, 758)  # okay
+        wait_for_ui("loaded", timeout)
+    except TimeoutError as exc:
+        raise RuntimeError("Map loaded screen not found. Timed out.") from exc
+    GUI.wait_click(0, *const.UI_CLICKS["loaded"])
     GUI.wait(post_load_wait)
 
 
@@ -254,6 +253,7 @@ def perform_strategy(s, log_final_wait=False):
     action_list = strategy_to_use.get_actions()
 
     for i, a in enumerate(action_list):
+        LOGGER.info("Strategy action %s/%s: %s", i + 1, len(action_list), a.get_name())
         if log_final_wait and i == len(action_list) - 1:
             # On final action.
             try:
@@ -267,17 +267,9 @@ def perform_strategy(s, log_final_wait=False):
 def check_auto_start(timeout=5):
     """Detect whether auto-start is enabled or disabled."""
     try:
-        result = wait_for_badge_2(
-            [
-                const.FILE_PREFIX + "autoStartOff.png",
-                const.FILE_PREFIX + "autoStartOn.png",
-            ],
-            [[(1325, 307)], [(1325, 307)]],
-            timeout,
-            match_threshold=[0.5],
-        )
-    except:
-        raise TimeoutError("check_auto_start: Unknown result. Timed out.")
+        result = wait_for_ui_any(("auto_start_off", "auto_start_on"), timeout)
+    except TimeoutError as exc:
+        raise TimeoutError("check_auto_start: Unknown result. Timed out.") from exc
 
     # result of 0: auto start is OFF
     # result of 1: auto start is ON
@@ -303,13 +295,9 @@ def check_game_result(timeout=30, log_time_elapsed=False):
         start_time = time.time()
     # Check for game result.
     try:
-        game_result = wait_for_badge_2(
-            [const.FILE_PREFIX + "win.png", const.FILE_PREFIX + "loss.png"],
-            [[(944, 209)], [(944, 209)]],
-            timeout,
-        )
-    except:
-        raise Exception("beat_map: Unknown game result. Timed out.")
+        game_result = wait_for_ui_any(("victory", "defeat"), timeout)
+    except TimeoutError as exc:
+        raise RuntimeError("beat_map: Unknown game result. Timed out.") from exc
 
     if log_time_elapsed:
         end_time = time.time()
@@ -329,6 +317,7 @@ def execute_action(a):
             for t in a.info:
                 do_tower_action(t)
         case "WaitSec":
+            LOGGER.info("Fixed strategy wait: %s seconds (not watching for results)", a.info)
             GUI.center_cursor()
             GUI.wait(a.info)
         case "WaitRound":
@@ -358,14 +347,9 @@ def execute_action(a):
                 GUI.center_cursor()
                 GUI.wait(1.5)
                 try:
-                    wait_for_badge(
-                        const.FILE_PREFIX + "roundStopped.png",
-                        [(1832, 1016)],
-                        round_timeout,
-                        threshold=[0.9],
-                    )
-                except:
-                    raise RuntimeError("Round exceeded wait_time.")
+                    wait_for_ui("round_stopped", round_timeout)
+                except TimeoutError as exc:
+                    raise RuntimeError("Round exceeded wait_time.") from exc
 
         case "Ability":
             GUI.key_push(a.info)
@@ -390,6 +374,7 @@ def execute_action(a):
                 GUI.key_push(" ")
                 is_first_round = False
             GUI.center_cursor()
+            LOGGER.info("Starting play; fixed wait: %s seconds", wait_time)
             GUI.wait(wait_time)
         case _:
             raise ValueError("execute_action: Invalid action name.")
@@ -397,6 +382,8 @@ def execute_action(a):
 
 def do_tower_action(t):
     """Place, upgrade, target, or sell a tower."""
+    LOGGER.info("Tower instruction: %s at %s, upgrade clicks %s, targeting tabs %s",
+                t.name, t.get_position(), t.get_upgrades(), t.targeting)
     this_hot_key = t.get_hotkey()
     upgrade_keys = [",", ".", "/"]
 
@@ -424,63 +411,106 @@ def do_tower_action(t):
     GUI.deselect()
 
 
-def wait_for_badge(filename, coords, timeout, threshold=[0.07]):
-    """Wait until a template matches one of the specified coordinates."""
-    search_radius = 0
-    search_mode = 0
-    rounding = 1
+def _wait_for_matches(
+    filenames: list[str],
+    coord_lists: list[list[tuple[int, int]]],
+    timeout: float,
+    thresholds: Sequence[Sequence[float]],
+    radii: list[int],
+    labels: list[str],
+) -> tuple[int, tuple[int, int]]:
+    """Poll with cancellation, bounded progress logs, and per-target diagnostics."""
+    if timeout < 0:
+        raise ValueError("Vision timeout must be nonnegative")
+    if const.VISION_POLL_INTERVAL <= 0 or const.VISION_LOG_INTERVAL <= 0:
+        raise ValueError("Vision poll and log intervals must be positive")
+    if not filenames or not (
+        len(filenames) == len(coord_lists) == len(thresholds) == len(radii) == len(labels)
+    ):
+        raise ValueError("Vision targets must have matching, nonempty settings")
 
-    try:
-        x = len(threshold)
-    except:
-        threshold = [threshold]
+    start = time.monotonic()
+    deadline = start + timeout
+    next_log = start + const.VISION_LOG_INTERVAL
+    best: list[tuple[float, tuple[int, int]]] = [(-1.0, (0, 0)) for _ in filenames]
+    descriptions = [
+        f"{label} ({Path(filename).name}, coords={coords}, "
+        f"threshold={limits}, radius={radius})"
+        for label, filename, coords, limits, radius in
+        zip(labels, filenames, coord_lists, thresholds, radii)
+    ]
+    LOGGER.info("Waiting up to %.1fs for %s", timeout, " OR ".join(descriptions))
 
-    match_found = False
-    match_found, match_coords, match_percent = locate(
-        filename, coords, search_radius, threshold, search_mode, rounding
-    )
-
-    start_time = time.time()
-    while (not match_found) and abs(time.time() - start_time) <= timeout:
-        GUI.exit_key_check()
-        match_found, match_coords, match_percent = locate(
-            filename, coords, search_radius, threshold, search_mode, rounding
+    def summary() -> str:
+        return "; ".join(
+            f"{label}: best={score:.1%} at {coords}, required>{limits}"
+            for label, (score, coords), limits in zip(labels, best, thresholds)
         )
 
-    if not match_found:
-        raise TimeoutError("wait_for_badge: Timed out. Not found.")
-    else:
-        return True
+    while True:
+        GUI.exit_key_check()
+        for index, (filename, coords, limits, radius) in enumerate(
+            zip(filenames, coord_lists, thresholds, radii)
+        ):
+            GUI.exit_key_check()
+            found, match_coords, score = locate(filename, coords, radius, limits, 0, 1)
+            if score > best[index][0]:
+                best[index] = (score, match_coords)
+            if found:
+                LOGGER.info("Detected %s at %s: %.1f%% match after %.2fs",
+                            labels[index], match_coords, 100 * score,
+                            time.monotonic() - start)
+                return index, match_coords
+            if time.monotonic() >= deadline:
+                break
+
+        now = time.monotonic()
+        if now >= deadline:
+            message = f"Vision timed out after {now - start:.2f}s: {summary()}"
+            LOGGER.warning(message)
+            raise TimeoutError(message)
+        if now >= next_log:
+            LOGGER.info("Still waiting (%.1fs elapsed): %s", now - start, summary())
+            next_log = now + const.VISION_LOG_INTERVAL
+        GUI.wait(min(const.VISION_POLL_INTERVAL, deadline - now))
+
+
+def wait_for_badge(
+    filename, coords, timeout, threshold=None, *, search_radius=0, label=None
+):
+    """Wait for one template; legacy scalar and per-coordinate thresholds work."""
+    if threshold is None:
+        threshold = [0.07]
+    elif isinstance(threshold, (int, float)):
+        threshold = [threshold]
+    _wait_for_matches(
+        [filename], [coords], timeout, [threshold], [search_radius],
+        [label if label is not None else Path(filename).name],
+    )
+    return True
 
 
 def wait_for_badge_2(
     filenames,
     coordMx,  # pylint: disable=invalid-name
     timeout,
-    match_threshold=[0.07],
+    match_threshold=None,
+    *,
+    thresholds=None,
+    search_radii=None,
+    labels=None,
 ):
     """Wait for any of the supplied templates and return its index."""
-    n = len(filenames)
-    search_radius = 0
-    search_mode = 0
-    rounding = 1
-    match_found = False
-
-    start_time = time.time()  # (####.###) seconds.
-
-    while abs(time.time() - start_time) <= timeout:
-        GUI.exit_key_check()
-        for i in range(n):
-            filename = filenames[i]
-            coords = coordMx[i]
-
-            match_found, match_coords, match_percent = locate(
-                filename, coords, search_radius, match_threshold, search_mode, rounding
-            )
-            if match_found:
-                return i
-
-    raise TimeoutError("wait_for_badge_2: Timed out. Neither found.")
+    if match_threshold is None:
+        match_threshold = [0.07]
+    count = len(filenames)
+    index, _ = _wait_for_matches(
+        filenames, coordMx, timeout,
+        thresholds if thresholds is not None else [match_threshold] * count,
+        search_radii if search_radii is not None else [0] * count,
+        labels if labels is not None else [Path(name).name for name in filenames],
+    )
+    return index
 
 
 def find_rewards_map(diff, filename, rad=0):
@@ -495,10 +525,7 @@ def find_rewards_map(diff, filename, rad=0):
     current_page = navigate(Page.get_page_by_info(const.PAGES, diff, 1))
 
     # Check for expert button before continuing.
-    try:
-        wait_for_badge(const.FILE_PREFIX + "expert.png", [(1337, 974)], 5)
-    except:
-        raise Exception("Expert button not found. Timed out.")
+    wait_for_ui("expert", 5)
 
     m_found = False  # initial value.
 
@@ -506,6 +533,8 @@ def find_rewards_map(diff, filename, rad=0):
     # pageNum, coords, matchRatio
 
     for i in range(Page.get_num_subpages(const.PAGES, diff)):
+        LOGGER.info("Searching reward badge on page %s, radius %s",
+                    current_page.number, rad)
         GUI.wait(0.4)
 
         ### Check current page at each location in c_list ###
@@ -571,7 +600,14 @@ def percentage(decimal):
 ### Start of Main ###
 def main():
     """Run the map-selection and gameplay loop."""
+    logging.basicConfig(
+        level=const.LOG_LEVEL, format="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%H:%M:%S",
+    )
     const.init()
+    LOGGER.info("Starting macro: origin=%s, selection mode=%s, default=%s/%s; "
+                "Caps Lock stops input", const.GAME_SCREEN_ORIGIN,
+                const.MAP_SELECTION_MODE, const.DEFAULT_MAP, const.DEFAULT_MODE)
     try:
         GUI.check_input_vars(
             const.MAPS,
@@ -586,23 +622,20 @@ def main():
         print("Invalid settings.")
         raise SystemError
 
-    GUI.wait_click(0, 1900, 0)  # click top right of screen to focus
+    GUI.wait_click(0, *const.UI_CLICKS["focus"])
 
     i = 0
     money_earned = 0
     while True:
         # Wait for home screen before continuing.
         try:
-            wait_for_badge(const.FILE_PREFIX + "homePlay.png", [(834, 933)], 30, 0.90)
-        except:
-            raise Exception("Must start on home screen. Timed out.")
+            wait_for_ui("home_play", 30)
+        except TimeoutError as exc:
+            raise RuntimeError("Must start on home screen. Timed out.") from exc
         GUI.play_button(0)
 
         # Check for expert button before continuing.
-        try:
-            wait_for_badge(const.FILE_PREFIX + "expert.png", [(1337, 974)], 5)
-        except:
-            raise Exception("Expert button not found. Timed out.")
+        wait_for_ui("expert", 5)
 
         match const.MAP_SELECTION_MODE:
             case 0:
@@ -647,16 +680,9 @@ def main():
         GUI.wait(1)
 
         try:
-            reward_status = wait_for_badge_2(
-                [
-                    const.FILE_PREFIX + "homePlay.png",
-                    const.FILE_PREFIX + "collectBadge.png",
-                ],
-                [[(834, 933)], [(960, 679)]],
-                25,
-            )
-        except:
-            raise Exception("Unknown free monkey status. Timed out.")
+            reward_status = wait_for_ui_any(("home_play", "collect"), 25)
+        except TimeoutError as exc:
+            raise RuntimeError("Unknown free monkey status. Timed out.") from exc
         match reward_status:
             case 0:
                 pass  # No free monkeys

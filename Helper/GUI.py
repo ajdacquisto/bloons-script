@@ -7,6 +7,7 @@ import keyboard
 import pyautogui as pg
 import pydirectinput
 
+import constant as const
 import Helper.Page as Page
 from Helper.Hero import Hero
 from Helper.KeyboardInput import PressKey, ReleaseKey
@@ -164,21 +165,21 @@ def wait(n: float) -> None:
 
 
 def wait_click(t: float, x: int, y: int) -> None:
-    """Wait, then click at the specified screen coordinates."""
+    """Wait, then click at the specified game-local coordinates."""
     wait(t)
-    pg.click(x, y)
+    pg.click(*const.get_desktop_coords(x, y))
 
 
 def center_cursor() -> None:
     """Move the cursor to the center of the expected screen."""
-    pg.moveTo(960, 540)
+    pg.moveTo(*const.get_desktop_coords(*const.UI_CLICKS["center"]))
 
 
 def place_tower(t: Tower) -> None:
     """Select and place a tower at its configured position."""
     x, y = t.get_position()
     key_push(t.get_hotkey())
-    pg.moveTo(x, y, duration=0.1)
+    pg.moveTo(*const.get_desktop_coords(x, y), duration=0.1)
     wait_click(0, x, y)
 
 
@@ -232,52 +233,52 @@ def check_input_vars(map_list: List[Map], params: List[any]) -> None:
 
 def hero_change_button() -> None:
     """Open the hero-selection screen."""
-    wait_click(0.5, 104, 990)
+    wait_click(0.5, *const.UI_CLICKS["change_hero"])
 
 
 def hero_select_button() -> None:
     """Confirm the selected hero."""
-    wait_click(0.2, 1116, 615)
+    wait_click(0.2, *const.UI_CLICKS["select_hero"])
 
 
 def back_arrow_button() -> None:
     """Click the back arrow."""
-    wait_click(0.2, 80, 50)
+    wait_click(0.2, *const.UI_CLICKS["back"])
 
 
 def play_button(waitTime) -> None:  # pylint: disable=invalid-name
     """Wait, then click Play."""
-    wait_click(waitTime, 833, 936)
+    wait_click(waitTime, *const.UI_CLICKS["home_play"])
 
 
 def victory_next_button(waittime) -> None:
     """Wait, then advance from the victory screen."""
-    wait_click(waittime, 958, 909)  # next
+    wait_click(waittime, *const.UI_CLICKS["victory_next"])
 
 
 def victory_home_button(waittime) -> None:
     """Wait, then return home after a victory."""
-    wait_click(waittime, 718, 842)  # home
+    wait_click(waittime, *const.UI_CLICKS["victory_home"])
 
 
 def defeat_home_button(waittime) -> None:
     """Wait, then return home after a defeat."""
-    wait_click(waittime, 738, 805)  # home
+    wait_click(waittime, *const.UI_CLICKS["defeat_home"])
 
 
 def esc_cancel_button() -> None:
     """Click Cancel in the escape menu."""
-    wait_click(0.1, 796, 747)
+    wait_click(0.1, *const.UI_CLICKS["escape_cancel"])
 
 
 def free_monkey_cont_button() -> None:
     """Continue to the free-monkey selection screen."""
-    wait_click(2, 957, 674)
+    wait_click(2, *const.UI_CLICKS["free_monkey_continue"])
 
 
 def auto_start_toggle_switch(waittime) -> None:
     """Wait, then toggle auto-start."""
-    wait_click(waittime, 1325, 307)
+    wait_click(waittime, *const.UI_CLICKS["auto_start"])
 
 
 def select_hero(H: Hero) -> None:  # pylint: disable=invalid-name
@@ -294,6 +295,7 @@ def page_button(difficulty: int, waittime: float = 0) -> None:
     """Click the page tab for a map difficulty."""
     coords = Page.get_button_coords(difficulty)
     wait_click(waittime, coords[0], coords[1])
+    center_cursor()
 
 
 def accept_free_monkeys() -> bool:

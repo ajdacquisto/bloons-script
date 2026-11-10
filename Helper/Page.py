@@ -2,6 +2,8 @@
 
 from typing import Tuple, List
 
+from Helper.UICalibration import UI_CLICKS
+
 
 class Page:
     """Describe one map-selection page and its navigation coordinates."""
@@ -123,16 +125,16 @@ def get_button_coords(diff: int) -> Tuple[int, int]:
     """Return the difficulty tab's screen coordinates."""
     match diff:
         case 0:
-            return (582, 977)
+            return UI_CLICKS["beginner_tab"]
         case 1:
-            return (834, 977)
+            return UI_CLICKS["intermediate_tab"]
         case 2:
-            return (1086, 977)
+            return UI_CLICKS["advanced_tab"]
         case 3:
-            return (1338, 977)
+            return UI_CLICKS["expert_tab"]
 
 
-def get_dot_coord_list(pageList: List[Page]) -> Tuple[int, int]:  # pylint: disable=invalid-name
+def get_dot_coord_list(pageList: List[Page]) -> List[Tuple[int, int]]:  # pylint: disable=invalid-name
     """Return the screen coordinates of the supplied page indicators."""
     c_list = []
     for p in pageList:

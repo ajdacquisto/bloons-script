@@ -1,0 +1,3 @@
+[tool.pylint.basic]
+# Keep established script and helper module names importable without renaming them.
+module-rgx = "^(?:[a-z_][a-z0-9_]*|Main|ImageGrabTestTest|SetBadgeIcon|Action|GUI|Hero|ImageGrabTest|KeyboardInput|Location|Map|Page|Strategy|Tower)$"

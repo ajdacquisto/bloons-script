@@ -36,3 +36,20 @@ resolution, UI scale, or game layout can cause incorrect input.
 
 The `Helper` folder contains the map, page, and strategy data used by the
 automation. Matching templates and reference screenshots are in `Media`.
+
+## Development
+
+Install the development dependencies and run the automated checks:
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m unittest discover -s tests -v
+
+$files = @(git ls-files '*.py' | ForEach-Object { $_ -replace '/', '\' })
+python -m pylint --disable=R,W,E,F --reports=n --score=n $files
+```
+
+The tests mock mouse and keyboard input; they do not play the game. The Pylint
+command checks convention diagnostics. Omit `--disable=R,W,E,F` to see the
+remaining errors, warnings, and refactoring suggestions as well. Existing module
+names and legacy public keyword names are retained for compatibility.

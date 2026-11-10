@@ -419,6 +419,29 @@ def get_strategy(m: Map) -> List[Strategy]:
             Action("WaitSec", 2),
         ]
         return [Strategy(0, "Deflation", get_hero("Captain Churchill"), action_list)]
+    elif m.name == "Tricky Tracks":
+        action_list = [
+            Action(
+                "Tower",
+                [
+                    Tower("Monkey Village", [787, 680], [0, 0, 2], 0),
+                    Tower("Monkey Ace", [694, 788], [2, 0, 3], 0),
+                ],
+            ),
+            Action("Start", 0),
+            Action(
+                "Tower",
+                [
+                    Tower("Monkey Ace", [920, 621], [2, 0, 3], 0),
+                    Tower("Alchemist", [704, 714], [4, 0, 1], 0),
+                    Tower("Sniper Monkey", [955, 548], [2, 0, 2], 0),
+                    Tower("sell", [787, 680], [0, 0, 0], 0),
+                    Tower("Monkey Village", [787, 680], [2, 2, 0], 0),
+                ],
+            ),
+            Action("WaitSec", 283),
+        ]
+        return [Strategy(0, "Deflation", get_hero("None"), action_list)]
     else:
         return None
 

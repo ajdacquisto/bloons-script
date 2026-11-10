@@ -76,7 +76,7 @@ class ExistingBehaviorTests(unittest.TestCase):
         """Every random index selects a map with a nonempty strategy list."""
         maps = Map.map_setup(str(ROOT / "Helper" / "mapLocations.dat"))
         playable = [m for m in maps if m.strategy]
-        self.assertEqual(len(playable), 11)
+        self.assertEqual(len(playable), 12)
         for index, expected in enumerate(playable):
             with self.subTest(index=index):
                 with patch.object(Map, "randint", return_value=index) as randint:
@@ -91,6 +91,29 @@ class ExistingBehaviorTests(unittest.TestCase):
         with patch.object(unsupported[0], "strategy", []):
             with self.assertRaisesRegex(ValueError, "No maps have a defined strategy"):
                 Map.pick_rand([unsupported[0]])
+
+    def test_tricky_tracks_coordinates_are_monitor_relative(self):
+        """Recorded desktop positions are translated from the capture monitor."""
+        maps = Map.map_setup(str(ROOT / "Helper" / "mapLocations.dat"))
+        tricky_tracks = Map.get_map_by_name(maps, "Tricky Tracks")
+        strategies = tricky_tracks.strategy
+        if not isinstance(strategies, list):
+            self.fail("Expected Tricky Tracks strategies")
+        self.assertEqual(len(strategies), 1)
+        strategy = strategies[0]
+        self.assertEqual(strategy.get_game_mode(), "Deflation")
+        recorded_positions = [
+            (-1133, 970), (-1226, 1078), (-1000, 911), (-1216, 1004),
+            (-965, 838), (-1133, 970), (-1133, 970),
+        ]
+        towers = [
+            tower for action in strategy.get_actions()
+            if action.get_name() == "Tower" for tower in action.get_info()
+        ]
+        self.assertEqual(
+            [tower.get_position() for tower in towers],
+            [[x + 1920, y - 290] for x, y in recorded_positions],
+        )
 
     def test_reward_search_visits_all_expert_subpages(self):
         """A search without a match scans and cycles through all expert pages."""

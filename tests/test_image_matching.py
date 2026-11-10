@@ -5,7 +5,12 @@ import unittest
 import numpy as np
 from PIL import Image
 
-from Helper.ImageGrabTest import get_arr_match_ratio, optimize_match_ratio
+from Helper.ImageGrabTest import (
+    compare_triplets,
+    get_arr_match_ratio,
+    is_black,
+    optimize_match_ratio,
+)
 
 
 class ImageMatchingTests(unittest.TestCase):
@@ -49,6 +54,18 @@ class ImageMatchingTests(unittest.TestCase):
         screen.paste(source, (2, 2))
 
         self.assertEqual(optimize_match_ratio(source, screen, (4, 3), 0, 0, 1), 1)
+
+    def test_triplet_comparison_preserves_rounding_and_size_validation(self):
+        """Triplet comparisons retain their rounding and length checks."""
+        self.assertTrue(compare_triplets((8, 12, 16), (9, 13, 17), 4))
+        self.assertFalse(compare_triplets((8, 12, 16), (9, 13, 20), 4))
+        with self.assertRaisesRegex(RuntimeError, "Triplet sizes don't match"):
+            compare_triplets((1, 2), (1, 2, 3), 1)
+
+    def test_black_detection_preserves_rounding(self):
+        """A channel is black only when its rounded value is zero."""
+        self.assertTrue(is_black((3, 0, 1), 0, 4))
+        self.assertFalse(is_black((4, 0, 1), 0, 4))
 
 
 if __name__ == "__main__":

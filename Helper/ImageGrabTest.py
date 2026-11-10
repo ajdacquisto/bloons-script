@@ -1,3 +1,5 @@
+"""Compare screen captures with image templates."""
+
 from pathlib import Path
 
 from PIL import ImageGrab, Image, ImageChops
@@ -5,23 +7,32 @@ from numpy import asarray
 
 
 def image_to_arr(im):
+    """Convert a Pillow image to a NumPy array."""
     return asarray(im)
 
 
 def arr_to_image(ar):
+    """Convert a NumPy array to a Pillow image."""
     return Image.fromarray(ar)
 
 
 def display(im):
+    """Display an image using the system image viewer."""
     im.show()
 
 
 # ..............................................................................
 def locate(
-    filename, coordList, radius, thresh_list, search_mode, rounding, debug_mode=False
+    filename,
+    coordList,  # pylint: disable=invalid-name
+    radius,
+    thresh_list,
+    search_mode,
+    rounding,
+    debug_mode=False,
 ):
     """
-    test_function does blah blah blah.
+    Find the best template match at the supplied screen locations.
 
     :param filename: (String) source image to locate
     :param coordList: [(x,y),(x,y),...] screen locations to check
@@ -49,29 +60,30 @@ def locate(
     best_info = (-1, False, (0, 0), 0)
     # index, meetsReqt, coords, ratio
 
-    for i, X in enumerate(zip(coordList, thresh_list)):
-        C, T = X
+    for i, (coords, threshold) in enumerate(zip(coordList, thresh_list)):
         match_ratio = optimize_match_ratio(
-            src_img, screen_img, C, radius, search_mode, rounding
+            src_img, screen_img, coords, radius, search_mode, rounding
         )
 
         # Define match as 'found' if the matchRatio exceeds the threshold.
-        matchFound = match_ratio > T
+        match_found = match_ratio > threshold
 
         if match_ratio > best_info[3]:
-            best_info = (i, matchFound, C, match_ratio)
+            best_info = (i, match_found, coords, match_ratio)
 
         if debug_mode:
             match_percent = round(100 * match_ratio, 1)
             if match_percent == 0:
-                print(f"~ [{C[0]} {C[1]}] No match.")
-            elif matchFound:
+                print(f"~ [{coords[0]} {coords[1]}] No match.")
+            elif match_found:
                 print(
-                    f"~ [{C[0]} {C[1]}] {match_percent}% match. Exceeds threshold {T}."
+                    f"~ [{coords[0]} {coords[1]}] {match_percent}% match. "
+                    f"Exceeds threshold {threshold}."
                 )
             else:
                 print(
-                    f"~ [{C[0]} {C[1]}] {match_percent}% match. Does not exceed threshold {T}."
+                    f"~ [{coords[0]} {coords[1]}] {match_percent}% match. "
+                    f"Does not exceed threshold {threshold}."
                 )
 
     if best_info[1]:
@@ -80,6 +92,7 @@ def locate(
 
 
 def to_hex_chain(rgb):
+    """Convert an RGB triplet to a six-character hexadecimal string."""
     r = to_hex_special(rgb[0])
     g = to_hex_special(rgb[1])
     b = to_hex_special(rgb[2])
@@ -87,6 +100,7 @@ def to_hex_chain(rgb):
 
 
 def to_hex_special(num):
+    """Format one channel as a two-digit hexadecimal value."""
     s = hex(num)
     if num < 16:
         s = s[:2] + "0" + s[2:]
@@ -100,10 +114,11 @@ def optimize_match_ratio(
     search_radius,
     search_mode,
     rounding,
-    doReporting=False,
-    doFileSave=False,
-    saveFileName="",
+    doReporting=False,  # pylint: disable=invalid-name
+    doFileSave=False,  # pylint: disable=invalid-name
+    saveFileName="",  # pylint: disable=invalid-name
 ):
+    """Return the best match ratio within a radius around the search coordinates."""
     # First, convert both images to the correct format
     src_img = src_img.convert("RGB")
     screen_img = screen_img.convert("RGB")
@@ -131,10 +146,10 @@ def optimize_match_ratio(
 
     total = 0
     max_ratio = 0
-    maxCoords = (0, 0)
-    bestImg = None
+    max_coords = (0, 0)
+    best_img = None
 
-    predictedTotal = (x_left_last - x_left_first + 1) * (y_top_last - y_top_first + 1)
+    predicted_total = (x_left_last - x_left_first + 1) * (y_top_last - y_top_first + 1)
 
     for x1 in range(x_left_first, x_left_last + 1):
         for y1 in range(y_top_first, y_top_last + 1):
@@ -148,17 +163,22 @@ def optimize_match_ratio(
 
             if doReporting:
                 print(
-                    f"[{round(100*(total/predictedTotal),1)}% done] at ({round(x1+width/2,0)},{round(y1+height/2,0)}) with {round(100*new_ratio,1)}% match; best is ({round(maxCoords[0]+width/2,0)},{round(maxCoords[1]+height/2,0)}) with {round(100*max_ratio,1)}% match"
+                    f"[{round(100 * (total / predicted_total), 1)}% done] "
+                    f"at ({round(x1 + width / 2, 0)},{round(y1 + height / 2, 0)}) "
+                    f"with {round(100 * new_ratio, 1)}% match; "
+                    f"best is ({round(max_coords[0] + width / 2, 0)},"
+                    f"{round(max_coords[1] + height / 2, 0)}) "
+                    f"with {round(100 * max_ratio, 1)}% match"
                 )
 
             if new_ratio > max_ratio:
                 max_ratio = new_ratio
-                bestImg = screen_img_cropped
-                maxCoords = (x1, y1)
+                best_img = screen_img_cropped
+                max_coords = (x1, y1)
 
     if doReporting:
         try:
-            display(bestImg)  #
+            display(best_img)  #
             if saveFileName == "":
                 saveFileName = (
                     Path(__file__).resolve().parent.parent
@@ -167,14 +187,14 @@ def optimize_match_ratio(
                     / "test.png"
                 )
             if doFileSave:
-                bestImg.save(saveFileName)
+                best_img.save(saveFileName)
         except:
             print("not found.")
 
     return max_ratio
 
 
-def compare_images(Im1, Im2, mode, rounding):
+def compare_images(Im1, Im2, mode, rounding):  # pylint: disable=invalid-name
     """
     compare_images will compare each pixel of the two images, returning a
     decimal in [0,1] where 0 is a 0% match and 1 is a 100% match.
@@ -189,9 +209,9 @@ def compare_images(Im1, Im2, mode, rounding):
     match mode:
         case 0:
             # Use image to array and comparison
-            A1 = image_to_arr(Im1)
-            A2 = image_to_arr(Im2)
-            return get_arr_match_ratio(A1, A2, rounding)
+            array1 = image_to_arr(Im1)
+            array2 = image_to_arr(Im2)
+            return get_arr_match_ratio(array1, array2, rounding)
         case 1:
             # Use image difference and black percent
             img_difference = ImageChops.difference(Im1, Im2)
@@ -201,7 +221,7 @@ def compare_images(Im1, Im2, mode, rounding):
             raise ValueError("compare_images: Invalid comparison mode.")
 
 
-def get_arr_match_ratio(A1, A2, rndg):
+def get_arr_match_ratio(A1, A2, rndg):  # pylint: disable=invalid-name
     """
     get_match_ratio takes two arrays and determines how many matching cells
     they have. A higher rounding value will result in close-but-not-exact
@@ -233,27 +253,29 @@ def get_arr_match_ratio(A1, A2, rndg):
 
 
 def compare_triplets(t1, t2, rndg):
+    """Compare two color triplets after applying the rounding factor."""
     # returns true or false
     if len(t1) != len(t2):
         raise RuntimeError("compare_triplets: Triplet sizes don't match.")
 
-    for x in range(len(t1)):
-        if (t1[x] // rndg) != (t2[x] // rndg):
+    for first, second in zip(t1, t2):
+        if (first // rndg) != (second // rndg):
             return False
     return True
 
 
 def compute_black_ratio(im, mode, rounding):
-    rgbArr = image_to_arr(im)
-    blackCtr = 0
+    """Return the fraction of pixels considered black."""
+    rgb_arr = image_to_arr(im)
+    black_count = 0
     total = 0
-    for a in range(len(rgbArr)):
-        for b in range(len(rgbArr[0])):
-            if is_black(rgbArr[a, b], mode, rounding):
-                blackCtr += 1
+    for a in range(len(rgb_arr)):
+        for b in range(len(rgb_arr[0])):
+            if is_black(rgb_arr[a, b], mode, rounding):
+                black_count += 1
             total += 1
 
-    return blackCtr / total
+    return black_count / total
 
 
 def is_black(rgb, mode, rounding):
@@ -269,8 +291,8 @@ def is_black(rgb, mode, rounding):
     match mode:
         case 0:
             # Compare each value to 0
-            for x in range(len(rgb)):
-                if rgb[x] // rounding != 0:
+            for channel in rgb:
+                if channel // rounding != 0:
                     return False
             return True
         case 1:

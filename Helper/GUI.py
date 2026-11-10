@@ -1,16 +1,21 @@
-import pydirectinput, keyboard, time
-from Helper.KeyboardInput import PressKey, ReleaseKey
-import pyautogui as pg
-from Helper.Tower import Tower
-from typing import List
-from Helper.Map import Map
-from Helper.Hero import Hero
+"""Mouse and keyboard helpers for navigating the game UI."""
 
-# from Map import MAPS
+import time
+from typing import List
+
+import keyboard
+import pyautogui as pg
+import pydirectinput
+
 import Helper.Page as Page
+from Helper.Hero import Hero
+from Helper.KeyboardInput import PressKey, ReleaseKey
+from Helper.Map import Map
+from Helper.Tower import Tower
 
 
 def key_push(c: str) -> None:
+    """Send a supported key press, checking the exit key first."""
     exit_key_check()
     if c == "esc":
         pydirectinput.press("esc")
@@ -141,15 +146,17 @@ def key_push(c: str) -> None:
 
 
 def exit_key_check() -> None:
+    """Exit on Caps Lock or print the current time on Up."""
     if keyboard.is_pressed("CAPSLOCK"):
-        print("End time: %.3f sec" % time.time())
+        print(f"End time: {time.time():.3f} sec")
         print("<!> Keyboard Interrupt... <!>")
         raise SystemExit
     if keyboard.is_pressed("Up"):
-        print("-> %.1f sec" % time.time())
+        print(f"-> {time.time():.1f} sec")
 
 
 def wait(n: float) -> None:
+    """Wait in short intervals while checking for the exit key."""
     interval = 0.1
     for i in range(round(n / interval)):
         exit_key_check()
@@ -157,15 +164,18 @@ def wait(n: float) -> None:
 
 
 def wait_click(t: float, x: int, y: int) -> None:
+    """Wait, then click at the specified screen coordinates."""
     wait(t)
     pg.click(x, y)
 
 
 def center_cursor() -> None:
+    """Move the cursor to the center of the expected screen."""
     pg.moveTo(960, 540)
 
 
 def place_tower(t: Tower) -> None:
+    """Select and place a tower at its configured position."""
     x, y = t.get_position()
     key_push(t.get_hotkey())
     pg.moveTo(x, y, duration=0.1)
@@ -173,35 +183,39 @@ def place_tower(t: Tower) -> None:
 
 
 def select_tower(t: Tower) -> None:
+    """Select a tower at its configured position."""
     x, y = t.get_position()
     wait_click(0.2, x, y)
 
 
 def sell_tower(t: Tower) -> None:
+    """Select and sell a tower at its configured position."""
     select_tower(t)
     key_push("bksp")
 
 
 def deselect() -> None:
+    """Close the current selection."""
     wait(0.1)
     key_push("esc")
 
 
 def check_input_vars(map_list: List[Map], params: List[any]) -> None:
-    POST_WIN_WAIT, MAP_LOADING_TIME, DEFAULT_MAP, MAP_SELECTION_MODE = params
+    """Validate the configured waits, default map, and selection mode."""
+    post_win_wait, map_loading_time, default_map, map_selection_mode = params
 
     # Check POST_WIN_WAIT
-    if (POST_WIN_WAIT != POST_WIN_WAIT // 1) or (POST_WIN_WAIT < 0):
+    if (post_win_wait != post_win_wait // 1) or (post_win_wait < 0):
         raise ValueError("Invalid Post-Win Wait Time.")
 
     # Check MAP_LOADING_TIME
-    if (MAP_LOADING_TIME != MAP_LOADING_TIME // 1) or (MAP_LOADING_TIME < 0):
+    if (map_loading_time != map_loading_time // 1) or (map_loading_time < 0):
         raise ValueError("Invalid Map Loading Time.")
 
     # Check DEFAULT_MAP
     found = False
     for m in map_list:
-        if m.name == DEFAULT_MAP:
+        if m.name == default_map:
             found = True
             break
     if not found:
@@ -209,54 +223,65 @@ def check_input_vars(map_list: List[Map], params: List[any]) -> None:
 
     # Check MAP_SELECTION_MODE
     if (
-        (MAP_SELECTION_MODE != MAP_SELECTION_MODE // 1)
-        or (MAP_SELECTION_MODE < 0)
-        or (MAP_SELECTION_MODE > 5)
+        (map_selection_mode != map_selection_mode // 1)
+        or (map_selection_mode < 0)
+        or (map_selection_mode > 5)
     ):
         raise ValueError("Invalid Map Selection Mode.")
 
 
 def hero_change_button() -> None:
+    """Open the hero-selection screen."""
     wait_click(0.5, 104, 990)
 
 
 def hero_select_button() -> None:
+    """Confirm the selected hero."""
     wait_click(0.2, 1116, 615)
 
 
 def back_arrow_button() -> None:
+    """Click the back arrow."""
     wait_click(0.2, 80, 50)
 
 
-def play_button(waitTime) -> None:
+def play_button(waitTime) -> None:  # pylint: disable=invalid-name
+    """Wait, then click Play."""
     wait_click(waitTime, 833, 936)
 
 
 def victory_next_button(waittime) -> None:
+    """Wait, then advance from the victory screen."""
     wait_click(waittime, 958, 909)  # next
 
 
 def victory_home_button(waittime) -> None:
+    """Wait, then return home after a victory."""
     wait_click(waittime, 718, 842)  # home
 
 
 def defeat_home_button(waittime) -> None:
+    """Wait, then return home after a defeat."""
     wait_click(waittime, 738, 805)  # home
 
 
 def esc_cancel_button() -> None:
+    """Click Cancel in the escape menu."""
     wait_click(0.1, 796, 747)
 
 
 def free_monkey_cont_button() -> None:
+    """Continue to the free-monkey selection screen."""
     wait_click(2, 957, 674)
 
 
 def auto_start_toggle_switch(waittime) -> None:
+    """Wait, then toggle auto-start."""
     wait_click(waittime, 1325, 307)
 
 
-def select_hero(H: Hero) -> None:
+def select_hero(H: Hero) -> None:  # pylint: disable=invalid-name
+    """Select the specified hero unless the strategy uses no hero."""
     if H.name != "None":
         x, y = H.get_coords()
         hero_change_button()
@@ -266,18 +291,20 @@ def select_hero(H: Hero) -> None:
 
 
 def page_button(difficulty: int, waittime: float = 0) -> None:
-    C = Page.get_button_coords(difficulty)
-    wait_click(waittime, C[0], C[1])
+    """Click the page tab for a map difficulty."""
+    coords = Page.get_button_coords(difficulty)
+    wait_click(waittime, coords[0], coords[1])
 
 
 def accept_free_monkeys() -> bool:
-    xCoords = [810, 1106, 661, 960, 1261]
-    yCoord = 532
+    """Collect available free monkeys and dismiss the reward screens."""
+    x_coords = [810, 1106, 661, 960, 1261]
+    y_coord = 532
     free_monkey_cont_button()
     wait(2)
-    for xCoord in xCoords:
+    for x_coord in x_coords:
         for i in range(2):
-            wait_click(0.4, xCoord, yCoord)
+            wait_click(0.4, x_coord, y_coord)
 
     wait_click(0.2, 958, 997)  # cont
     wait(0.2)

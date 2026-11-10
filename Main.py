@@ -1,20 +1,21 @@
+"""Run map selection and strategy automation for Bloons TD 6."""
+
 # BTD6 Macro
 # - Austin D'Acquisto
 
 # Caps lock is the quit key
 
-from Helper import GUI
-from Helper.ImageGrabTest import locate
-from Helper import Location
-from Helper import Map
-from Helper import Page
+import time
+
+import pyautogui as pg
 
 import constant as const
-import pyautogui as pg
-import time
+from Helper import GUI, Location, Map, Page
+from Helper.ImageGrabTest import locate
 
 
 def navigate(p, log=False):
+    """Navigate from the detected page to the requested map-selection page."""
     if p is None:
         raise ValueError("navigate: Page is None")
 
@@ -58,23 +59,24 @@ def navigate(p, log=False):
 
 
 def identify_current_page(log=False):
-    SEARCH_RADIUS = 0
-    SEARCH_MODE = 0
-    ROUNDING = 1
-    THRESHOLD = [0.08]
-    FILENAME = const.FILE_PREFIX + "mapDot.png"
-    COORD_LIST = Page.get_dot_coord_list(const.PAGES)
-    TIMEOUT = 2  # seconds
+    """Identify the active map-selection page from its indicator."""
+    search_radius = 0
+    search_mode = 0
+    rounding = 1
+    threshold = [0.08]
+    filename = const.FILE_PREFIX + "mapDot.png"
+    coord_list = Page.get_dot_coord_list(const.PAGES)
+    timeout = 2  # seconds
     match_found = False
     match_found, match_coords, match_percent = locate(
-        FILENAME, COORD_LIST, SEARCH_RADIUS, THRESHOLD, SEARCH_MODE, ROUNDING
+        filename, coord_list, search_radius, threshold, search_mode, rounding
     )
 
     start_time = time.time()
-    while (not match_found) and abs(time.time() - start_time) <= TIMEOUT:
+    while (not match_found) and abs(time.time() - start_time) <= timeout:
         GUI.exit_key_check()
         match_found, match_coords, match_percent = locate(
-            FILENAME, COORD_LIST, SEARCH_RADIUS, THRESHOLD, SEARCH_MODE, ROUNDING
+            filename, coord_list, search_radius, threshold, search_mode, rounding
         )
 
     if not match_found:
@@ -89,14 +91,7 @@ def identify_current_page(log=False):
 
 
 def beat_map(m) -> None:
-    """
-    beat_map will click on the map's menu location (assuming already navigated to proper page) and
-    execute each Action in Strategy for the given map. Starts the game, waits for it to end, and returns
-    to the main menu.
-
-    :param m: Map variable represents the map to beat.
-    :return: No return value.
-    """
+    """Play a map's configured strategy and return to the main menu."""
     # Click on the map that has been chosen.
     GUI.wait_click(0.1, m.page_location.x - 150, m.page_location.y)
 
@@ -132,8 +127,8 @@ def beat_map(m) -> None:
     perform_strategy(strategy_to_use, log_final_wait=True)
 
     # Game should be over by now. Handle game result.
-    G = check_game_result(timeout=25, log_time_elapsed=True)
-    match G:
+    game_result = check_game_result(timeout=25, log_time_elapsed=True)
+    match game_result:
         case 0:  # Win
             GUI.victory_next_button(0)
             GUI.victory_home_button(0.4)
@@ -147,6 +142,7 @@ def beat_map(m) -> None:
 
 
 def adjust_auto_start_smart(target_game_mode: str) -> None:
+    """Set auto-start as needed for the selected game mode."""
     # Set the auto-start if necessary
     if const.AUTO_START == -1:
         # still needs to be set.
@@ -172,6 +168,7 @@ def adjust_auto_start_smart(target_game_mode: str) -> None:
 
 
 def select_strategy(m):
+    """Choose a map strategy, preferring the configured default mode."""
     strategy_list = m.strategy
 
     try:
@@ -192,6 +189,7 @@ def select_strategy(m):
 
 
 def select_gamemode_smart(mode):
+    """Wait for and select the requested game mode."""
     match mode:
         case "Deflation":
             # Check for deflation option before clicking there.
@@ -214,6 +212,7 @@ def select_gamemode_smart(mode):
 
 
 def select_difficulty_smart(diff):
+    """Wait for and select the requested game difficulty."""
     match diff:
         case 0:
             # Check for easy option before clicking there.
@@ -227,6 +226,7 @@ def select_difficulty_smart(diff):
 
 
 def overwrite_save_smart(timeout=1.5):
+    """Overwrite an existing save when the prompt appears."""
     # Check for saved game, & overwrite if necessary
     try:
         wait_for_badge(const.FILE_PREFIX + "overwriteBadge.png", [(570, 379)], timeout)
@@ -237,6 +237,7 @@ def overwrite_save_smart(timeout=1.5):
 
 
 def map_loading_wait(timeout=20, post_load_wait=0.8):
+    """Wait for the map-loaded prompt and dismiss it."""
     # Check for map to be loaded.
     try:
         wait_for_badge(const.FILE_PREFIX + "loaded2.png", [(960, 392)], timeout)
@@ -248,6 +249,7 @@ def map_loading_wait(timeout=20, post_load_wait=0.8):
 
 
 def perform_strategy(s, log_final_wait=False):
+    """Execute the strategy actions in order."""
     strategy_to_use = s
     action_list = strategy_to_use.get_actions()
 
@@ -263,6 +265,7 @@ def perform_strategy(s, log_final_wait=False):
 
 
 def check_auto_start(timeout=5):
+    """Detect whether auto-start is enabled or disabled."""
     try:
         result = wait_for_badge_2(
             [
@@ -284,21 +287,23 @@ def check_auto_start(timeout=5):
 
 
 def toggle_auto_start():
-    currentState = const.AUTO_START
-    if currentState != 0 and currentState != 1:
+    """Toggle the cached auto-start state."""
+    current_state = const.AUTO_START
+    if current_state != 0 and current_state != 1:
         raise ValueError
-    elif currentState == 0:
+    elif current_state == 0:
         const.AUTO_START = 1
     else:
         const.AUTO_START = 0
 
 
 def check_game_result(timeout=30, log_time_elapsed=False):
+    """Wait for a victory or defeat indicator and return its index."""
     if log_time_elapsed:
         start_time = time.time()
     # Check for game result.
     try:
-        G = wait_for_badge_2(
+        game_result = wait_for_badge_2(
             [const.FILE_PREFIX + "win.png", const.FILE_PREFIX + "loss.png"],
             [[(944, 209)], [(944, 209)]],
             timeout,
@@ -314,10 +319,11 @@ def check_game_result(timeout=30, log_time_elapsed=False):
         else:
             print(f"<log>Time elapsed: {elapsed_time}")
 
-    return G
+    return game_result
 
 
 def execute_action(a):
+    """Execute one action from a map strategy."""
     match a.get_name():
         case "Tower":
             for t in a.info:
@@ -340,7 +346,7 @@ def execute_action(a):
                 else:
                     raise ValueError("execute_action: a.info is bad length.")
 
-            ROUND_TIMEOUT = 60
+            round_timeout = 60
 
             for i in range(num_rounds_to_wait):
                 # Start then wait
@@ -355,7 +361,7 @@ def execute_action(a):
                     wait_for_badge(
                         const.FILE_PREFIX + "roundStopped.png",
                         [(1832, 1016)],
-                        ROUND_TIMEOUT,
+                        round_timeout,
                         threshold=[0.9],
                     )
                 except:
@@ -390,8 +396,9 @@ def execute_action(a):
 
 
 def do_tower_action(t):
+    """Place, upgrade, target, or sell a tower."""
     this_hot_key = t.get_hotkey()
-    UPGRADE_KEYS = [",", ".", "/"]
+    upgrade_keys = [",", ".", "/"]
 
     if this_hot_key == "bksp":
         GUI.sell_tower(t)
@@ -404,10 +411,10 @@ def do_tower_action(t):
 
     # Upgrade tower
     u = t.get_upgrades()
-    for path_num in range(len(u)):
-        for i in range(u[path_num]):
+    for path_num, upgrade_count in enumerate(u):
+        for i in range(upgrade_count):
             GUI.wait(0.08)
-            GUI.key_push(UPGRADE_KEYS[path_num])
+            GUI.key_push(upgrade_keys[path_num])
 
     # Set targeting priority
     for n in range(t.targeting):
@@ -418,9 +425,10 @@ def do_tower_action(t):
 
 
 def wait_for_badge(filename, coords, timeout, threshold=[0.07]):
-    SEARCH_RADIUS = 0
-    SEARCH_MODE = 0
-    ROUNDING = 1
+    """Wait until a template matches one of the specified coordinates."""
+    search_radius = 0
+    search_mode = 0
+    rounding = 1
 
     try:
         x = len(threshold)
@@ -429,14 +437,14 @@ def wait_for_badge(filename, coords, timeout, threshold=[0.07]):
 
     match_found = False
     match_found, match_coords, match_percent = locate(
-        filename, coords, SEARCH_RADIUS, threshold, SEARCH_MODE, ROUNDING
+        filename, coords, search_radius, threshold, search_mode, rounding
     )
 
     start_time = time.time()
     while (not match_found) and abs(time.time() - start_time) <= timeout:
         GUI.exit_key_check()
         match_found, match_coords, match_percent = locate(
-            filename, coords, SEARCH_RADIUS, threshold, SEARCH_MODE, ROUNDING
+            filename, coords, search_radius, threshold, search_mode, rounding
         )
 
     if not match_found:
@@ -445,11 +453,17 @@ def wait_for_badge(filename, coords, timeout, threshold=[0.07]):
         return True
 
 
-def wait_for_badge_2(filenames, coordMx, timeout, match_threshold=[0.07]):
+def wait_for_badge_2(
+    filenames,
+    coordMx,  # pylint: disable=invalid-name
+    timeout,
+    match_threshold=[0.07],
+):
+    """Wait for any of the supplied templates and return its index."""
     n = len(filenames)
-    SEARCH_RADIUS = 0
-    SEARCH_MODE = 0
-    ROUNDING = 1
+    search_radius = 0
+    search_mode = 0
+    rounding = 1
     match_found = False
 
     start_time = time.time()  # (####.###) seconds.
@@ -461,7 +475,7 @@ def wait_for_badge_2(filenames, coordMx, timeout, match_threshold=[0.07]):
             coords = coordMx[i]
 
             match_found, match_coords, match_percent = locate(
-                filename, coords, SEARCH_RADIUS, match_threshold, SEARCH_MODE, ROUNDING
+                filename, coords, search_radius, match_threshold, search_mode, rounding
             )
             if match_found:
                 return i
@@ -470,6 +484,7 @@ def wait_for_badge_2(filenames, coordMx, timeout, match_threshold=[0.07]):
 
 
 def find_rewards_map(diff, filename, rad=0):
+    """Search the map pages for a reward badge and return the matching map."""
     curr_debug_mode = rad != 0
 
     mode = 0
@@ -532,7 +547,8 @@ def find_rewards_map(diff, filename, rad=0):
 
         if not m_found:
             print(
-                f"No {100*prev_min_ratio}% matches, but a {percentage(notable_ratio)} match was found."
+                f"No {100*prev_min_ratio}% matches, but a "
+                f"{percentage(notable_ratio)} match was found."
             )
 
         if notable_ratio <= prev_min_ratio:
@@ -548,11 +564,13 @@ def find_rewards_map(diff, filename, rad=0):
 
 
 def percentage(decimal):
+    """Format a decimal fraction as a percentage."""
     return str(round(100 * decimal, 1)) + "%"
 
 
 ### Start of Main ###
 def main():
+    """Run the map-selection and gameplay loop."""
     const.init()
     try:
         GUI.check_input_vars(
@@ -620,16 +638,16 @@ def main():
 
         print(f"{i+1}.\t{m.name}")
         navigate(const.PAGES[m.page])
-        isWin = beat_map(m)
+        is_win = beat_map(m)
 
-        if isWin:
+        if is_win:
             money_earned += 66
         print("Money earned: $", money_earned)
 
         GUI.wait(1)
 
         try:
-            R = wait_for_badge_2(
+            reward_status = wait_for_badge_2(
                 [
                     const.FILE_PREFIX + "homePlay.png",
                     const.FILE_PREFIX + "collectBadge.png",
@@ -639,7 +657,7 @@ def main():
             )
         except:
             raise Exception("Unknown free monkey status. Timed out.")
-        match R:
+        match reward_status:
             case 0:
                 pass  # No free monkeys
             case 1:

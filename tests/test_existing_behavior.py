@@ -104,6 +104,59 @@ class ExistingBehaviorTests(unittest.TestCase):
 
         self.assertEqual(wait_click.call_args_list, [call(0, 833, 936), call(0.5, 400, 400)])
 
+    def test_validate_map_settings(self):
+        """Valid settings pass while invalid waits are rejected."""
+        maps = Map.map_setup(dataFilePath=str(ROOT / "Helper" / "mapLocations.dat"))
+        GUI.check_input_vars(maps, [0, 0, "Dark Dungeons", 1])
+
+        with self.assertRaisesRegex(ValueError, "Post-Win Wait"):
+            GUI.check_input_vars(maps, [-1, 0, "Dark Dungeons", 1])
+
+    def test_identify_current_page(self):
+        """The page indicator is matched against the configured coordinates."""
+        pages = Page.get_pages(str(ROOT / "Helper" / "pageInfo.dat"))
+        with (
+            patch.object(Main.const, "PAGES", pages, create=True),
+            patch.object(Main.const, "FILE_PREFIX", "", create=True),
+            patch.object(Main, "locate", return_value=(True, pages[11].dot_coords, 1)) as locate,
+        ):
+            self.assertIs(Main.identify_current_page(), pages[11])
+
+        locate.assert_called_once_with(
+            "mapDot.png", Page.get_dot_coord_list(pages), 0, [0.08], 0, 1
+        )
+
+    def test_wait_for_badge_uses_legacy_coordinate_keyword(self):
+        """Badge alternatives retain their order and the legacy keyword."""
+        results = [(False, (0, 0), 0), (True, (3, 4), 1)]
+        with (
+            patch.object(GUI, "exit_key_check"),
+            patch.object(Main, "locate", side_effect=results) as locate,
+        ):
+            result = Main.wait_for_badge_2(
+                filenames=["first", "second"],
+                coordMx=[[(1, 2)], [(3, 4)]],
+                timeout=1,
+                match_threshold=[0.5],
+            )
+
+        self.assertEqual(result, 1)
+        self.assertEqual(
+            locate.call_args_list,
+            [
+                call("first", [(1, 2)], 0, [0.5], 0, 1),
+                call("second", [(3, 4)], 0, [0.5], 0, 1),
+            ],
+        )
+
+    def test_auto_start_state_toggles(self):
+        """The cached auto-start state still alternates between off and on."""
+        with patch.object(Main.const, "AUTO_START", 0, create=True):
+            Main.toggle_auto_start()
+            self.assertEqual(Main.const.AUTO_START, 1)
+            Main.toggle_auto_start()
+            self.assertEqual(Main.const.AUTO_START, 0)
+
     def test_map_navigation_wraps_within_difficulty(self):
         """Moving from the last subpage to the first takes one click."""
         current = Page.Page(3, 0, 3, (849, 758))

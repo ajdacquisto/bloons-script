@@ -1,8 +1,11 @@
-from typing import List
+from typing import Generic, TypeVar
 
 
-class Action:
-    def __init__(self, name: str, info: List[any]):
+_InfoT = TypeVar("_InfoT")
+
+
+class Action(Generic[_InfoT]):
+    def __init__(self, name: str, info: _InfoT):
         self.name = name  # 'Tower' 'Wait' 'Ability' 'Start'
         self.info = info  # list of Tower, or Integer, or String
 
@@ -17,5 +20,5 @@ class Action:
     def get_name(self) -> str:
         return self.name
 
-    def get_info(self) -> List[any]:
+    def get_info(self) -> _InfoT:
         return self.info

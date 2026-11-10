@@ -25,11 +25,7 @@ class Strategy:
         return True
 
     def __str__(self) -> str:
-        action_list_str = "("
-        for a in self.actions:
-            action_list_str += str(a)
-            action_list_str += ","
-        action_list_str[-1] = ")"
+        action_list_str = "(" + ",".join(str(a) for a in self.actions) + ")"
         d = self.get_game_difficulty()
         m = self.get_game_mode()
         h = self.get_hero()

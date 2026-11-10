@@ -223,8 +223,8 @@ def get_arr_match_ratio(A1, A2, rndg):
 
     total = 0
     matches = 0
-    for a in range(width):
-        for b in range(height):
+    for a in range(height):
+        for b in range(width):
             if compare_triplets(A1[a, b], A2[a, b], rndg):
                 matches += 1
             total += 1

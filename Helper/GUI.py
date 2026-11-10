@@ -134,7 +134,7 @@ def key_push(c: str) -> None:
             code = 0x3A
 
         case _:
-            raise ("key_push: Invalid character. " + str(c))
+            raise ValueError(f"key_push: Invalid character. {c}")
 
     PressKey(code)
     ReleaseKey(code)

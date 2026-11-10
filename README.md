@@ -95,6 +95,12 @@ numbers and card positions in `Helper/mapLocations.dat` when the game adds maps.
 Random selection only chooses maps with at least one strategy defined in
 `Helper/Map.py`; maps without strategies can remain in the location data.
 
+Hero names and zero-based selection slots come from `Helper/heroes.dat`
+(`Name,Row,Col`), loaded before map strategies are built. Edit that file when
+the hero grid changes; no separate hard-coded hero list needs updating.
+`None,-1,-1` means the strategy does not select or place a hero. Slots below the
+visible grid may require scrolling support, which is not currently automated.
+
 ## Development
 
 Install the development dependencies and run the automated checks:

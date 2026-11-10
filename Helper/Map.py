@@ -1,9 +1,10 @@
 """Load maps and define the strategies used to play them."""
 
 from random import randint
+from pathlib import Path
 from typing import List
 
-from Helper.Hero import Hero
+from Helper.Hero import Hero, get_heroes
 from Helper.Location import Location, getLoc
 from Helper.Action import Action
 from Helper.Strategy import Strategy
@@ -12,23 +13,7 @@ from Helper.Tower import Tower
 class Map:
     """Describe a map's menu location and available strategies."""
 
-    HEROES = [
-        Hero("Quincy", (0, 0)),
-        Hero("Gwendolin", (0, 1)),
-        Hero("Striker Jones", (0, 2)),
-        Hero("Obyn", (1, 0)),
-        Hero("Geraldo", (1, 1)),
-        Hero("Captain Churchill", (1, 2)),
-        Hero("Benjamin", (2, 0)),
-        Hero("Ezili", (2, 1)),
-        Hero("Pat Fusty", (2, 2)),
-        Hero("Adora", (3, 0)),
-        Hero("Admiral Brickell", (3, 1)),
-        Hero("Etienne", (3, 2)),
-        Hero("Sauda", (4, 0)),
-        Hero("Psi", (4, 1)),
-        Hero("None", (-1, -1)),
-    ]
+    HEROES = get_heroes(str(Path(__file__).with_name("heroes.dat")))
 
     def __init__(
         self,

@@ -3,7 +3,8 @@
 import os
 from pathlib import Path
 
-from Helper.Map import map_setup
+from Helper.Map import Map, map_setup
+from Helper.Hero import get_heroes
 from Helper.Page import get_pages
 from Helper.UICalibration import UI_CLICKS, UI_TARGETS as UI_TARGETS
 
@@ -93,14 +94,15 @@ def init():
 
     # Filename stuff
     # ---
+    global HERO_DATA
+    HERO_DATA = str(HELPER_DIR / "heroes.dat")
+    Map.HEROES = get_heroes(HERO_DATA)
+
     global MAPS  # List[Map]
     MAPS = map_setup(str(HELPER_DIR / "mapLocations.dat"))
 
     global PAGES
     PAGES = get_pages(str(HELPER_DIR / "pageInfo.dat"))
-
-    global HERO_DATA
-    HERO_DATA = str(HELPER_DIR / "heroes.dat")
 
     global FILE_PREFIX
     FILE_PREFIX = str(MEDIA_DIR) + os.sep

@@ -33,25 +33,28 @@ class Hero:
         return (x, y)
 
 
-# def get_heroes(filename: str) -> List[Hero]:
-#     with open(filename, "r") as f:
-#         line = f.readline()
-#         heroes = []
-#         while line:
-#             if line[0] != "#":
-#                 # Ignore final newline character:
-#                 if line[-1] == "\n":
-#                     line = line[:-1]
-
-#                 # Create a list from comma separated items
-#                 line_list = line.split(",")
-
-#                 h_name = line_list[0]
-#                 h_row = int(line_list[1])
-#                 h_col = int(line_list[2])
-#                 h_coords = (h_row, h_col)
-#                 h = Hero(h_name, h_coords)
-#                 heroes.append(h)
-
-#             line = f.readline()
-#     return heroes
+def get_heroes(filename: str) -> List[Hero]:
+    """Load named hero slots, reporting invalid records with their line number."""
+    heroes = []
+    names = set()
+    with open(filename, "r") as source:
+        for line_number, line in enumerate(source, 1):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            try:
+                name, row_text, col_text = (field.strip() for field in line.split(","))
+                row, col = int(row_text), int(col_text)
+                valid_slot = (
+                    (row, col) == (-1, -1) if name == "None"
+                    else row >= 0 and 0 <= col <= 2
+                )
+                if not name or name in names or not valid_slot:
+                    raise ValueError("Invalid name, duplicate hero, or invalid slot")
+            except ValueError as exc:
+                raise ValueError(f"{filename}:{line_number}: Invalid hero record") from exc
+            heroes.append(Hero(name, (row, col)))
+            names.add(name)
+    if not heroes:
+        raise ValueError(f"{filename}: No heroes defined")
+    return heroes

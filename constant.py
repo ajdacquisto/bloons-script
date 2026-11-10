@@ -20,7 +20,7 @@ VISION_POLL_INTERVAL = 0.2
 VISION_LOG_INTERVAL = 3.0
 
 # Desktop position of the game display's top-left corner; monitor 2: (-1920, 290).
-GAME_SCREEN_ORIGIN: tuple[int, int] = (0, 0)
+GAME_SCREEN_ORIGIN: tuple[int, int] = (-1920, 290)
 
 
 def get_desktop_coords(x: int, y: int) -> tuple[int, int]:
@@ -68,7 +68,7 @@ def init():
     # ---
 
     global MAP_SELECTION_MODE
-    MAP_SELECTION_MODE = 1
+    MAP_SELECTION_MODE = 5
     # selection mode:
     #   0 - only default map, on repeat
     #   1 - chooses a random map
@@ -78,7 +78,7 @@ def init():
     #   5 - does candy search & if none, calibrates expansively
 
     global DEFAULT_MAP
-    DEFAULT_MAP = "Dark Dungeons"
+    DEFAULT_MAP = "Muddy Puddles"
 
     global DEFAULT_MODE
     DEFAULT_MODE = "Deflation"

@@ -125,15 +125,15 @@ def beat_map(m) -> None:
     overwrite_save_smart(timeout=1.5)
 
     # Let the map load
-    try:
-        map_loading_wait(timeout=6, post_load_wait=0.8)
-    except RuntimeError:
-        if strategy_to_use.get_game_mode() == "Deflation":
-            raise SystemExit
-        elif strategy_to_use.get_game_mode() == "Standard":
-            pass
-        else:
-            raise RuntimeError("Unkown gamemode")
+    if strategy_to_use.get_game_mode() == "Deflation":
+        map_loading_wait(
+            timeout=const.MAP_LOADING_TIMEOUT_DEFLATION, post_load_wait=0.8
+        )
+    else:
+        try:
+            map_loading_wait(timeout=6, post_load_wait=0.8)
+        except TimeoutError:
+            LOGGER.info("No introductory prompt detected; continuing Standard mode")
 
     # Adjust auto start
     try:
@@ -239,10 +239,7 @@ def overwrite_save_smart(timeout=1.5):
 def map_loading_wait(timeout=20, post_load_wait=0.8):
     """Wait for the map-loaded prompt and dismiss it."""
     # Check for map to be loaded.
-    try:
-        wait_for_ui("loaded", timeout)
-    except TimeoutError as exc:
-        raise RuntimeError("Map loaded screen not found. Timed out.") from exc
+    wait_for_ui("loaded", timeout)
     GUI.wait_click(0, *const.UI_CLICKS["loaded"])
     GUI.wait(post_load_wait)
 

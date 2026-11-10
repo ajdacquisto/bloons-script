@@ -81,6 +81,10 @@ the delay between unsuccessful polling sweeps (default 0.2 seconds); Caps Lock
 is checked during polling. Set `LOG_LEVEL` to `"WARNING"` in `constant.py` to
 hide informational messages. Screenshots are not saved by this logging.
 
+Deflation waits up to `MAP_LOADING_TIMEOUT_DEFLATION` seconds (default 30) for
+its introductory OK prompt. A timeout preserves the vision diagnostics and stops
+the run without clicking through or executing the strategy.
+
 The `Helper` folder contains the map, page, and strategy data used by the
 automation. Matching templates and reference screenshots are in `Media`.
 

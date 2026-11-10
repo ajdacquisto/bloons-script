@@ -14,6 +14,50 @@ from Helper import GUI, ImageGrabTest
 class UICalibrationTests(unittest.TestCase):
     """Verify central settings reach detection, clicks, and useful live logs."""
 
+    def test_deflation_loading_uses_configured_timeout(self):
+        """Slow Deflation loads use the configured budget and never silently exit."""
+        strategy = unittest.mock.Mock()
+        strategy.get_game_mode.return_value = "Deflation"
+        game_map = unittest.mock.Mock()
+        game_map.name = "Bloody Puddles"
+        game_map.page_location.x = 100
+        game_map.page_location.y = 200
+        with (
+            patch.object(Main, "select_strategy", return_value=strategy),
+            patch.object(GUI, "wait_click"),
+            patch.object(GUI, "select_hero"),
+            patch.object(Main, "select_difficulty_smart"),
+            patch.object(Main, "select_gamemode_smart"),
+            patch.object(Main, "overwrite_save_smart"),
+            patch.object(const, "MAP_LOADING_TIMEOUT_DEFLATION", 30, create=True),
+            patch.object(Main, "map_loading_wait",
+                         side_effect=TimeoutError("loaded: best=3.1%")) as wait,
+            patch.object(Main, "adjust_auto_start_smart") as adjust,
+        ):
+            with self.assertRaisesRegex(TimeoutError, "loaded: best=3.1%"):
+                Main.beat_map(game_map)
+        wait.assert_called_once_with(timeout=30, post_load_wait=0.8)
+        adjust.assert_not_called()
+
+    def test_loading_wait_clicks_only_after_detection(self):
+        """A missing load prompt cannot trigger an OK click."""
+        with (
+            patch.object(Main, "wait_for_ui", side_effect=TimeoutError("loaded")),
+            patch.object(GUI, "wait_click") as click,
+        ):
+            with self.assertRaises(TimeoutError):
+                Main.map_loading_wait(timeout=30)
+        click.assert_not_called()
+        with (
+            patch.object(Main, "wait_for_ui") as wait,
+            patch.object(GUI, "wait_click") as click,
+            patch.object(GUI, "wait") as sleep,
+        ):
+            Main.map_loading_wait(timeout=30, post_load_wait=0.8)
+        wait.assert_called_once_with("loaded", 30)
+        click.assert_called_once_with(0, *const.UI_CLICKS["loaded"])
+        sleep.assert_called_once_with(0.8)
+
     def test_page_tab_moves_cursor_away_before_detection(self):
         """Hovering changes the Expert template; clear hover after each tab click."""
         with (

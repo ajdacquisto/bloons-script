@@ -37,6 +37,13 @@ resolution, UI scale, or game layout can cause incorrect input.
 The `Helper` folder contains the map, page, and strategy data used by the
 automation. Matching templates and reference screenshots are in `Media`.
 
+Map-selection pages are defined in `Helper/pageInfo.dat`; navigation derives
+each difficulty's page count from this file. Keep page numbers sequential from
+zero and subpages sequential from zero within each difficulty. Update map page
+numbers and card positions in `Helper/mapLocations.dat` when the game adds maps.
+Random selection only chooses maps with at least one strategy defined in
+`Helper/Map.py`; maps without strategies can remain in the location data.
+
 ## Development
 
 Install the development dependencies and run the automated checks:

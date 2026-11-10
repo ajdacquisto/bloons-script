@@ -1,12 +1,14 @@
-# Title ["Xx Xx"], Difficulty [0-3], Page [0-12], Subpage [0-3], Location ["Xx xx"], LocNum [0-5]
-Dark Dungeons,3,11,0,Top left,0
-Sanctuary,3,11,0,Top middle,1
-Ravine,3,11,0,Top right,2
-Flooded Valley,3,11,0,Bottom left,3
-Infernal,3,11,0,Bottom middle,4
-Bloody Puddles,3,11,0,Bottom right,5
-Workshop,3,12,1,Top left,0
-Quad,3,12,1,Top middle,1
-Dark Castle,3,12,1,Top right,2
-Muddy Puddles,3,12,1,Bottom left,3
-Ouch,3,12,1,Bottom middle,4
+# Title ["Xx Xx"], Difficulty [0-3], Page [0-16], Subpage [0-4], Location ["Xx xx"], LocNum [0-5]
+Tricky Tracks,3,14,0,Top left,0
+Glacial Trail,3,14,0,Top middle,1
+Dark Dungeons,3,14,0,Top right,2
+Sanctuary,3,14,0,Bottom left,3
+Ravine,3,14,0,Bottom middle,4
+Flooded Valley,3,14,0,Bottom right,5
+Infernal,3,15,1,Top left,0
+Bloody Puddles,3,15,1,Top middle,1
+Workshop,3,15,1,Top right,2
+Quad,3,15,1,Bottom left,3
+Dark Castle,3,15,1,Bottom middle,4
+Muddy Puddles,3,15,1,Bottom right,5
+Ouch,3,16,2,Top left,0

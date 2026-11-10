@@ -123,10 +123,13 @@ def get_map_by_name(map_list: List[Map], map_name: str) -> Map:
 
 
 def pick_rand(map_list: List[Map]) -> Map:
-    """Choose a random map from the supplied list."""
-    n = len(map_list)
+    """Choose a random map with at least one defined strategy."""
+    playable_maps = [m for m in map_list if m.strategy]
+    if not playable_maps:
+        raise ValueError("pick_rand: No maps have a defined strategy")
+    n = len(playable_maps)
     a = randint(0, n - 1)
-    return map_list[a]
+    return playable_maps[a]
 
 
 def get_map_from_location(

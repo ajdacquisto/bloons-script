@@ -35,15 +35,79 @@ class ExistingBehaviorTests(unittest.TestCase):
         maps = Map.map_setup(dataFilePath=str(ROOT / "Helper" / "mapLocations.dat"))
         pages = Page.get_pages(str(ROOT / "Helper" / "pageInfo.dat"))
 
-        self.assertEqual(len(maps), 11)
-        self.assertEqual(len(pages), 13)
-        self.assertEqual(maps[0].name, "Dark Dungeons")
-        strategies = maps[0].strategy
+        self.assertEqual(len(maps), 13)
+        self.assertEqual(len(pages), 17)
+        self.assertEqual(maps[0].name, "Tricky Tracks")
+        strategies = Map.get_map_by_name(maps, "Dark Dungeons").strategy
         if not isinstance(strategies, list):
             self.fail("Expected a list of map strategies")
         self.assertEqual(len(strategies), 2)
-        self.assertEqual(Page.get_page_by_info(pageList=pages, diff=3, subpage=1), pages[12])
-        self.assertEqual(Page.get_dot_coord_list(pageList=pages)[0], (738, 758))
+        self.assertEqual(Page.get_page_by_info(pageList=pages, diff=3, subpage=1), pages[15])
+        self.assertEqual(Page.get_dot_coord_list(pageList=pages)[0], (664, 758))
+        for m in maps:
+            page = pages[m.page]
+            self.assertEqual((page.difficulty, page.subset_num), (m.difficulty, m.subpage))
+
+    def test_subpage_counts_follow_loaded_data(self):
+        """Counts follow the data, including future pages above subpage three."""
+        pages = Page.get_pages(str(ROOT / "Helper" / "pageInfo.dat"))
+        self.assertEqual([Page.get_num_subpages(pages, diff) for diff in range(4)],
+                         [5, 5, 4, 3])
+        pages.append(Page.Page(17, 0, 5, (0, 0)))
+        self.assertEqual(Page.get_num_subpages(pages, 0), 6)
+        for page_list, diff in ((pages, -1), (pages, 4), ([], 0)):
+            with self.subTest(diff=diff, count=len(page_list)):
+                with self.assertRaises(ValueError):
+                    Page.get_num_subpages(page_list, diff)
+
+    def test_next_subpage_advances_and_wraps(self):
+        """Every difficulty cycles through all of its configured pages."""
+        pages = Page.get_pages(str(ROOT / "Helper" / "pageInfo.dat"))
+        for diff in range(4):
+            section = [p for p in pages if p.difficulty == diff]
+            for index, current in enumerate(section):
+                with self.subTest(diff=diff, subpage=index):
+                    self.assertIs(Page.get_next_in_diff(pages, current),
+                                  section[(index + 1) % len(section)])
+        with self.assertRaisesRegex(RuntimeError, "Invalid current subpage"):
+            Page.get_next_in_diff(pages, Page.Page(99, 0, -1, (0, 0)))
+
+    def test_random_maps_require_strategies(self):
+        """Every random index selects a map with a nonempty strategy list."""
+        maps = Map.map_setup(str(ROOT / "Helper" / "mapLocations.dat"))
+        playable = [m for m in maps if m.strategy]
+        self.assertEqual(len(playable), 11)
+        for index, expected in enumerate(playable):
+            with self.subTest(index=index):
+                with patch.object(Map, "randint", return_value=index) as randint:
+                    self.assertIs(Map.pick_rand(maps), expected)
+                randint.assert_called_once_with(0, len(playable) - 1)
+
+        unsupported = [m for m in maps if not m.strategy]
+        for candidates in ([], unsupported):
+            with self.subTest(count=len(candidates)):
+                with self.assertRaisesRegex(ValueError, "No maps have a defined strategy"):
+                    Map.pick_rand(candidates)
+        with patch.object(unsupported[0], "strategy", []):
+            with self.assertRaisesRegex(ValueError, "No maps have a defined strategy"):
+                Map.pick_rand([unsupported[0]])
+
+    def test_reward_search_visits_all_expert_subpages(self):
+        """A search without a match scans and cycles through all expert pages."""
+        pages = Page.get_pages(str(ROOT / "Helper" / "pageInfo.dat"))
+        with (
+            patch.object(Main.const, "PAGES", pages, create=True),
+            patch.object(Main.const, "FILE_PREFIX", "", create=True),
+            patch.object(Main.const, "get_matches", return_value=[0.5] * 6),
+            patch.object(Main, "navigate", side_effect=lambda page: page) as navigate,
+            patch.object(Main, "wait_for_badge"),
+            patch.object(GUI, "wait"),
+            patch.object(Main, "locate", return_value=(False, (0, 0), 0)) as locate,
+        ):
+            self.assertIsNone(Main.find_rewards_map(3, "unused.png"))
+        self.assertEqual(locate.call_count, 3)
+        self.assertEqual([args.args[0].number for args in navigate.call_args_list],
+                         [15, 16, 14, 15])
 
     def test_legacy_location_and_hero_accessors(self):
         """Legacy constructor keywords and accessors remain available."""
@@ -171,15 +235,17 @@ class ExistingBehaviorTests(unittest.TestCase):
 
     def test_map_navigation_wraps_within_difficulty(self):
         """Moving from the last subpage to the first takes one click."""
-        current = Page.Page(3, 0, 3, (849, 758))
-        target = Page.Page(0, 0, 0, (738, 758))
-        with (
-            patch.object(Main, "identify_current_page", return_value=current),
-            patch.object(GUI, "page_button") as page_button,
-        ):
-            self.assertIs(Main.navigate(target), target)
-
-        page_button.assert_called_once_with(0)
+        pages = Page.get_pages(str(ROOT / "Helper" / "pageInfo.dat"))
+        for diff in range(4):
+            section = [p for p in pages if p.difficulty == diff]
+            with (
+                self.subTest(diff=diff),
+                patch.object(Main.const, "PAGES", pages, create=True),
+                patch.object(Main, "identify_current_page", return_value=section[-1]),
+                patch.object(GUI, "page_button") as page_button,
+            ):
+                self.assertIs(Main.navigate(section[0]), section[0])
+                page_button.assert_called_once_with(diff)
 
     def test_tower_upgrade_keys_keep_their_order(self):
         """Upgrades and targeting changes are issued in their original order."""

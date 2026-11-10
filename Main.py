@@ -41,7 +41,7 @@ def navigate(p, log=False):
             for i in range(difference):
                 GUI.page_button(p.difficulty)
         elif difference < 0:
-            n = Page.get_num_subpages(p.difficulty)
+            n = Page.get_num_subpages(const.PAGES, p.difficulty)
             for i in range(n - abs(difference)):
                 GUI.page_button(p.difficulty)
         else:
@@ -505,7 +505,7 @@ def find_rewards_map(diff, filename, rad=0):
     notable = (None, (0, 0), 0)
     # pageNum, coords, matchRatio
 
-    for i in range(Page.get_num_subpages(diff)):
+    for i in range(Page.get_num_subpages(const.PAGES, diff)):
         GUI.wait(0.4)
 
         ### Check current page at each location in c_list ###
@@ -527,7 +527,7 @@ def find_rewards_map(diff, filename, rad=0):
         # Otherwise, go to the next page and try again.
         if curr_debug_mode:
             print("-> Next page.")
-        current_page = navigate(Page.get_next_in_diff(current_page))
+        current_page = navigate(Page.get_next_in_diff(const.PAGES, current_page))
 
     notable_ratio = notable[2]
 

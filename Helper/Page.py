@@ -94,35 +94,29 @@ def get_page_by_info(pageList: List[Page], diff: int, subpage: int) -> Page:  # 
     return None
 
 
-def get_next_in_diff(p: Page) -> Page:
+def get_next_in_diff(page_list: List[Page], p: Page) -> Page:
     """Find the next subpage within the current difficulty."""
-    page_count = get_num_subpages(p.difficulty)
+    page_count = get_num_subpages(page_list, p.difficulty)
     subpage = p.subset_num
 
-    last_subpage = page_count - 1
+    if not 0 <= subpage < page_count:
+        raise RuntimeError("get_next_in_diff: Invalid current subpage number")
+    new_subpage = (subpage + 1) % page_count
 
-    if subpage < 0:
-        raise RuntimeError("get_next_in_diff: Negative current subpage number")
-    if subpage + 1 <= last_subpage:
-        new_subpage = subpage + 1
-    elif subpage + 1 > last_subpage:
-        new_subpage = 0
-
-    return get_page_by_info(p.difficulty, new_subpage)
+    next_page = get_page_by_info(page_list, p.difficulty, new_subpage)
+    if next_page is None:
+        raise RuntimeError("get_next_in_diff: Next subpage is not defined")
+    return next_page
 
 
-def get_num_subpages(diff: int) -> int:
-    """Return the number of subpages for a map difficulty."""
-    if diff == 0:
-        return 4
-    elif diff == 1:
-        return 4
-    elif diff == 2:
-        return 3
-    elif diff == 3:
-        return 2
-    else:
+def get_num_subpages(page_list: List[Page], diff: int) -> int:
+    """Count the loaded pages belonging to a map difficulty."""
+    if diff not in (0, 1, 2, 3):
         raise ValueError("get_num_subpages: Invalid difficulty")
+    count = sum(p.difficulty == diff for p in page_list)
+    if count == 0:
+        raise ValueError("get_num_subpages: No pages defined for difficulty")
+    return count
 
 
 def get_button_coords(diff: int) -> Tuple[int, int]:

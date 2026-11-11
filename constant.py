@@ -16,6 +16,7 @@ MATCHES_FILE = HELPER_DIR / "data.txt"
 # Compatibility alias; edit the shared calibration rather than this value.
 HOME_PLAY_COORDS: tuple[int, int] = UI_CLICKS["home_play"]
 LOG_LEVEL = "INFO"
+STOP_KEY = "f12"
 VISION_POLL_INTERVAL = 0.2
 VISION_LOG_INTERVAL = 3.0
 

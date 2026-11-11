@@ -289,7 +289,7 @@ class ExistingBehaviorTests(unittest.TestCase):
                     self.assertEqual(Main.check_auto_start(), state)
 
     def test_auto_start_check_preserves_cancellation(self):
-        """Caps Lock cancellation propagates through auto-start detection."""
+        """Stop-key cancellation propagates through auto-start detection."""
         with (
             patch.object(Main.const, "FILE_PREFIX", "", create=True),
             patch.object(Main, "wait_for_badge_2", side_effect=SystemExit),

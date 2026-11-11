@@ -29,7 +29,8 @@ python .\Main.py
 ```
 
 The script begins controlling the mouse and keyboard and repeats its automation
-loop. Press **Caps Lock** to stop it. Review the map-selection and game settings
+loop. Press **F12** to stop it (configured by `STOP_KEY` in `constant.py`).
+Caps Lock no longer stops the macro. Review the map-selection and game settings
 in `constant.py` before running. The automation relies on fixed screen
 coordinates and image templates for a 1920x1080 layout, so a different
 resolution, UI scale, or game layout can cause incorrect input.
@@ -77,7 +78,7 @@ The console logs startup settings, page navigation, strategy actions and fixed
 waits, and vision waits. Vision logs identify the target and required threshold,
 report progress every `VISION_LOG_INTERVAL` seconds, and report successful match
 scores or timeout best scores and coordinates. `VISION_POLL_INTERVAL` controls
-the delay between unsuccessful polling sweeps (default 0.2 seconds); Caps Lock
+the delay between unsuccessful polling sweeps (default 0.2 seconds); `STOP_KEY`
 is checked during polling. Set `LOG_LEVEL` to `"WARNING"` in `constant.py` to
 hide informational messages. Screenshots are not saved by this logging.
 

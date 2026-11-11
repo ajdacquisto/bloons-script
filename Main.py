@@ -3,7 +3,7 @@
 # BTD6 Macro
 # - Austin D'Acquisto
 
-# Caps lock is the quit key
+# F12 is the stop key
 
 import logging
 import time
@@ -603,8 +603,9 @@ def main():
     )
     const.init()
     LOGGER.info("Starting macro: origin=%s, selection mode=%s, default=%s/%s; "
-                "Caps Lock stops input", const.GAME_SCREEN_ORIGIN,
-                const.MAP_SELECTION_MODE, const.DEFAULT_MAP, const.DEFAULT_MODE)
+                "%s stops input", const.GAME_SCREEN_ORIGIN,
+                const.MAP_SELECTION_MODE, const.DEFAULT_MAP, const.DEFAULT_MODE,
+                const.STOP_KEY.upper())
     try:
         GUI.check_input_vars(
             const.MAPS,

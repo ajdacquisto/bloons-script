@@ -1,5 +1,6 @@
 """Mouse and keyboard helpers for navigating the game UI."""
 
+import logging
 import time
 from typing import List
 
@@ -13,6 +14,9 @@ from Helper.Hero import Hero
 from Helper.KeyboardInput import PressKey, ReleaseKey
 from Helper.Map import Map
 from Helper.Tower import Tower
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def key_push(c: str) -> None:
@@ -147,10 +151,9 @@ def key_push(c: str) -> None:
 
 
 def exit_key_check() -> None:
-    """Exit on Caps Lock or print the current time on Up."""
-    if keyboard.is_pressed("CAPSLOCK"):
-        print(f"End time: {time.time():.3f} sec")
-        print("<!> Keyboard Interrupt... <!>")
+    """Exit on the configured stop key or print the current time on Up."""
+    if keyboard.is_pressed(const.STOP_KEY):
+        LOGGER.info("Stop requested via %s; ending macro input", const.STOP_KEY.upper())
         raise SystemExit
     if keyboard.is_pressed("Up"):
         print(f"-> {time.time():.1f} sec")
@@ -158,6 +161,7 @@ def exit_key_check() -> None:
 
 def wait(n: float) -> None:
     """Wait in short intervals while checking for the exit key."""
+    exit_key_check()
     interval = 0.1
     for i in range(round(n / interval)):
         exit_key_check()

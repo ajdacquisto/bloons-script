@@ -1,9 +1,62 @@
 """Regression tests for keyboard input validation."""
 
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 from Helper import GUI
+
+
+class StopKeyTests(unittest.TestCase):
+    """The configured stop key cancels input without using Caps Lock."""
+
+    def test_f12_stops_and_logs_the_reason(self):
+        with (
+            patch.object(GUI.const, "STOP_KEY", "f12"),
+            patch.object(GUI.keyboard, "is_pressed", return_value=True) as pressed,
+            self.assertLogs(GUI.LOGGER, level="INFO") as logs,
+            self.assertRaises(SystemExit),
+        ):
+            GUI.exit_key_check()
+        pressed.assert_called_once_with("f12")
+        self.assertIn("Stop requested via F12", logs.output[0])
+
+    def test_caps_lock_does_not_stop_input(self):
+        with (
+            patch.object(GUI.const, "STOP_KEY", "f12"),
+            patch.object(GUI.keyboard, "is_pressed",
+                         side_effect=lambda key: key.lower() == "capslock") as pressed,
+        ):
+            GUI.exit_key_check()
+        self.assertEqual(pressed.call_args_list, [call("f12"), call("Up")])
+
+    def test_stop_key_is_configurable(self):
+        with (
+            patch.object(GUI.const, "STOP_KEY", "f8"),
+            patch.object(GUI.keyboard, "is_pressed", return_value=True) as pressed,
+            self.assertRaises(SystemExit),
+        ):
+            GUI.exit_key_check()
+        pressed.assert_called_once_with("f8")
+
+    def test_stop_prevents_zero_delay_click(self):
+        with (
+            patch.object(GUI.keyboard, "is_pressed", return_value=True),
+            patch.object(GUI.pg, "click") as click,
+            self.assertRaises(SystemExit),
+        ):
+            GUI.wait_click(0, 100, 200)
+        click.assert_not_called()
+
+    def test_wait_checks_for_stop_between_intervals(self):
+        with (
+            patch.object(GUI, "exit_key_check",
+                         side_effect=[None, None, SystemExit]) as check,
+            patch.object(GUI.time, "sleep") as sleep,
+            self.assertRaises(SystemExit),
+        ):
+            GUI.wait(1)
+        self.assertEqual(check.call_count, 3)
+        sleep.assert_called_once_with(0.1)
 
 
 class KeyPushTests(unittest.TestCase):

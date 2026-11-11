@@ -16,13 +16,13 @@ class UITarget:
 
 # Uncalibrated targets retain their legacy thresholds and coordinates.
 UI_TARGETS = {
-    "home_play": UITarget("homePlay.png", (960, 945), 0.90),
-    "expert": UITarget("expert.png", (1337, 974), 0.85, 2),
-    "easy": UITarget("selectEasy.png", (627, 406), 0.85, 2),
+    "home_play": UITarget("homePlay.png", (960, 945), 0.80),
+    "expert": UITarget("expert.png", (1338, 1047), 0.80, 2),
+    "easy": UITarget("selectEasy.png", (627, 520), 0.60, 2),
     "standard": UITarget("modeStandard.png", (667, 593), 0.85, 2),
-    "deflation": UITarget("modeDeflation.png", (1322, 494), 0.85, 2),
-    "auto_start_off": UITarget("autoStartOff.png", (1325, 307), 0.5),
-    "auto_start_on": UITarget("autoStartOn.png", (1325, 307), 0.5),
+    "deflation": UITarget("modeDeflation.png", (1282, 540), 0.80, 2),
+    "auto_start_off": UITarget("autoStartOff.png", (1327, 307), 0.40, 2),
+    "auto_start_on": UITarget("autoStartOn.png", (1327, 307), 0.40, 2),
     # Actual centers are supplied from pageInfo.dat.
     "map_dot": UITarget("mapDot.png", (0, 0), 0.85, 1),
     "overwrite": UITarget("overwriteBadge.png", (570, 379)),

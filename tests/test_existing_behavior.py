@@ -271,11 +271,14 @@ class ExistingBehaviorTests(unittest.TestCase):
 
     def test_auto_start_templates_distinguish_both_states(self):
         """Current switch templates detect ON and OFF without confusing them."""
-        for state, filename in ((0, "autoStartOff.png"), (1, "autoStartOn.png")):
+        for state, name in ((0, "auto_start_off"), (1, "auto_start_on")):
             with self.subTest(state=state):
-                with Image.open(ROOT / "Media" / filename) as template:
+                target = Main.const.UI_TARGETS[name]
+                with Image.open(ROOT / "Media" / target.filename) as template:
                     screen = Image.new("RGB", (1920, 1080))
-                    screen.paste(template, (1265, 272))
+                    x = target.coords[0] - template.width // 2
+                    y = target.coords[1] - template.height // 2
+                    screen.paste(template, (x, y))
                 with (
                     patch.object(Main.const, "FILE_PREFIX", str(ROOT / "Media") + "\\",
                                  create=True),

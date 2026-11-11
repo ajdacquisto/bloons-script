@@ -64,15 +64,16 @@ click coordinates can differ: the template may cover only part of a button.
 Page-dot positions still come from `Helper/pageInfo.dat`, map-card positions
 from `Helper/Location.py`, and tower coordinates from each strategy.
 
-Expert, Easy, Standard, and Deflation templates were checked on fresh captures
-after a +/-30-pixel adjacency search. Standard's template center moved down
-9 pixels and Deflation's down 8 pixels. These four targets now require an 85%
-match and allow a 2-pixel search radius. Other targets retain their existing
-calibration except page dots: a compact filled-center template was verified
-against all 17 active indicators and their inactive neighbors, with an 85%
-threshold and 1-pixel search radius. This is not automatic threshold learning.
-Difficulty-tab clicks move the pointer away afterward so hover highlighting
-does not invalidate the Expert-tab template.
+Expert, Easy, and Deflation match stable labels on the current game layout.
+Their templates were checked against repeated live captures and unrelated
+screens; Easy uses a 60% threshold, Expert and Deflation use 80%, all with a
+2-pixel search radius. Auto Start uses distinct on/off switch templates with
+a 40% threshold; live matches reached 80% and the opposite-state cross-match
+stayed below 11%. Standard retains its existing icon calibration. A compact filled-center page-dot
+template was verified against all 17 active indicators and their inactive
+neighbors, with an 85% threshold and 1-pixel search radius. This is not
+automatic threshold learning. Difficulty-tab clicks move the pointer away
+afterward so hover highlighting does not invalidate the Expert-tab template.
 
 The console logs startup settings, page navigation, strategy actions and fixed
 waits, and vision waits. Vision logs identify the target and required threshold,

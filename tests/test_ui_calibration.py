@@ -9,6 +9,7 @@ from PIL import Image
 import Main
 import constant as const
 from Helper import GUI, ImageGrabTest
+from Helper.UICalibration import HERO_GRID_BOTTOM_LAST_ROW_Y, HERO_GRID_COLUMNS_X
 
 
 class UICalibrationTests(unittest.TestCase):
@@ -82,7 +83,7 @@ class UICalibrationTests(unittest.TestCase):
         ):
             self.assertTrue(Main.wait_for_ui("easy", 4))
         wait.assert_called_once_with(
-                "templates\\selectEasy.png", [(620, 410)], 4, [0.85],
+                "templates\\selectEasy.png", [(620, 410)], 4, [0.6],
             search_radius=3, label="easy", rounding=1,
         )
 
@@ -109,8 +110,8 @@ class UICalibrationTests(unittest.TestCase):
         ):
             self.assertEqual(Main.wait_for_ui_any(("home_play", "expert"), 1), 1)
         self.assertEqual(locate.call_args_list, [
-            call("homePlay.png", [(960, 945)], 0, [0.9], 0, 1),
-            call("expert.png", [(1337, 974)], 2, [0.85], 0, 1),
+            call("homePlay.png", [(960, 945)], 0, [0.8], 0, 1),
+            call("expert.png", [(1338, 1047)], 2, [0.8], 0, 1),
         ])
 
     def test_wait_logs_progress_success_and_sleeps(self):
@@ -191,23 +192,41 @@ class UICalibrationTests(unittest.TestCase):
 
     def test_calibrated_assets_tolerate_two_pixel_displacement(self):
         """Actual refreshed assets remain detectable within their configured radius."""
-        for name in ("expert", "easy", "standard", "deflation"):
+        for name in ("expert", "easy", "standard", "deflation",
+                     "auto_start_off", "auto_start_on", "hero_selected"):
             target = const.UI_TARGETS[name]
+            coords = target.coords
+            if name == "hero_selected":
+                coords = (
+                    HERO_GRID_COLUMNS_X[0] + const.HERO_SELECTED_OFFSET[0],
+                    HERO_GRID_BOTTOM_LAST_ROW_Y + const.HERO_SELECTED_OFFSET[1],
+                )
             with self.subTest(name=name):
                 with Image.open(const.MEDIA_DIR / target.filename) as image:
                     source = image.convert("RGB")
-                x, y = target.coords
+                x, y = coords
                 screen = Image.new("RGB", (1920, 1080), (1, 2, 3))
                 screen.paste(source, (x - source.width // 2 + 2,
                                       y - source.height // 2 - 2))
                 with patch.object(ImageGrabTest.ImageGrab, "grab", return_value=screen):
-                    found, coords, score = ImageGrabTest.locate(
-                        str(const.MEDIA_DIR / target.filename), [target.coords],
+                    found, match_coords, score = ImageGrabTest.locate(
+                        str(const.MEDIA_DIR / target.filename), [coords],
                         target.radius, [target.threshold], 0, 1,
                     )
                 self.assertTrue(found)
-                self.assertEqual(coords, target.coords)
+                self.assertEqual(match_coords, coords)
                 self.assertEqual(score, 1.0)
+
+    def test_auto_start_state_templates_are_distinct(self):
+        """Off and on switch crops cannot satisfy each other's calibrated threshold."""
+        with (
+            Image.open(const.MEDIA_DIR / const.UI_TARGETS["auto_start_off"].filename) as image,
+            Image.open(const.MEDIA_DIR / const.UI_TARGETS["auto_start_on"].filename) as image_on,
+        ):
+            score = ImageGrabTest.compare_images(
+                image.convert("RGB"), image_on.convert("RGB"), 0, 1
+            )
+        self.assertLess(score, const.UI_TARGETS["auto_start_on"].threshold)
 
     def test_dot_detection_rejects_inactive_indicators(self):
         """Only the filled dot qualifies among the configured page positions."""

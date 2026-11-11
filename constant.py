@@ -37,14 +37,10 @@ def set_matches(number_list):
         f.write(new_string)
 
 
-def get_matches():
+def get_matches() -> list[float]:
     """Read the stored image-match thresholds."""
     with MATCHES_FILE.open("r") as f:
-        contents = f.read()
-        contents = contents.split(",")
-        for i, s in enumerate(contents):
-            contents[i] = float(s)
-    return contents
+        return [float(value) for value in f.read().split(",")]
 
 
 def set_match(i, j, do_reporting=False):
@@ -69,7 +65,7 @@ def init():
     # ---
 
     global MAP_SELECTION_MODE
-    MAP_SELECTION_MODE = 5
+    MAP_SELECTION_MODE = 1
     # selection mode:
     #   0 - only default map, on repeat
     #   1 - chooses a random map

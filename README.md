@@ -93,8 +93,13 @@ Map-selection pages are defined in `Helper/pageInfo.dat`; navigation derives
 each difficulty's page count from this file. Keep page numbers sequential from
 zero and subpages sequential from zero within each difficulty. Update map page
 numbers and card positions in `Helper/mapLocations.dat` when the game adds maps.
-Random selection only chooses maps with at least one strategy defined in
-`Helper/Map.py`; maps without strategies can remain in the location data.
+Random, ordered, and reward-based selection only choose maps with at least one
+strategy defined in `Helper/Map.py`; maps without strategies can remain in the
+location data. Reward searches skip unsupported and unlisted cards, and ordered
+fallbacks cycle through playable maps. Modes 0 and 3 require the configured
+default map to have a strategy. The current default is mode 1: random playable
+maps, without event-reward searches. Set `MAP_SELECTION_MODE` in `constant.py`
+to change it.
 
 Hero names and zero-based selection slots come from `Helper/heroes.dat`
 (`Name,Row,Col`), loaded before map strategies are built. Edit that file when

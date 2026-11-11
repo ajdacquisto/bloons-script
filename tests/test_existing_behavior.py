@@ -136,8 +136,10 @@ class ExistingBehaviorTests(unittest.TestCase):
     def test_reward_search_visits_all_expert_subpages(self):
         """A search without a match scans and cycles through all expert pages."""
         pages = Page.get_pages(str(ROOT / "Helper" / "pageInfo.dat"))
+        maps = Map.map_setup(str(ROOT / "Helper" / "mapLocations.dat"))
         with (
             patch.object(Main.const, "PAGES", pages, create=True),
+            patch.object(Main.const, "MAPS", maps, create=True),
             patch.object(Main.const, "FILE_PREFIX", "", create=True),
             patch.object(Main.const, "get_matches", return_value=[0.5] * 6),
             patch.object(Main, "navigate", side_effect=lambda page: page) as navigate,

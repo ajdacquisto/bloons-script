@@ -106,13 +106,14 @@ def identify_current_page(log=False):
 
 def beat_map(m) -> None:
     """Play a map's configured strategy and return to the main menu."""
-    # Click on the map that has been chosen.
-    GUI.wait_click(0.1, m.page_location.x - 150, m.page_location.y)
-
     # Use rules to select the strategy to use.
     strategy_to_use = select_strategy(m)
     if strategy_to_use is None:
         raise ValueError(f"No strategy defined for {m.name}")
+
+    # Click on the map that has been chosen.
+    GUI.wait_click(0.1, m.page_location.x - 150, m.page_location.y)
+
     LOGGER.info("Playing %s: %s, hero %s", m.name,
                 strategy_to_use.get_game_mode(), strategy_to_use.get_hero().get_name())
 
@@ -188,11 +189,13 @@ def adjust_auto_start_smart(target_game_mode: str) -> None:
 def select_strategy(m):
     """Choose a map strategy, preferring the configured default mode."""
     strategy_list = m.strategy
+    if strategy_list is None:
+        return None
 
     try:
         num_strategies = len(strategy_list)
-    except:
-        raise ValueError("select_strategy: m.strategy has no length")
+    except TypeError as exc:
+        raise ValueError("select_strategy: m.strategy has no length") from exc
 
     if num_strategies < 1:
         return None
@@ -511,82 +514,87 @@ def wait_for_badge_2(
 
 
 def find_rewards_map(diff, filename, rad=0):
-    """Search the map pages for a reward badge and return the matching map."""
+    """Search playable map cards for a reward badge and return the matching map."""
     curr_debug_mode = rad != 0
 
     mode = 0
     rou = 1
     t_list = const.get_matches()
     c_list = Location.get_coord_list()
+    if len(t_list) not in (1, len(c_list)):
+        raise ValueError(
+            f"Expected 1 or {len(c_list)} reward thresholds, got {len(t_list)}"
+        )
+    playable_maps = Map.get_playable_maps(const.MAPS)
 
     current_page = navigate(Page.get_page_by_info(const.PAGES, diff, 1))
 
     # Check for expert button before continuing.
     wait_for_ui("expert", 5)
 
-    m_found = False  # initial value.
-
+    m_found = False
+    m_coords = (0, 0)
+    m_ratio = 0.0
     notable = (None, (0, 0), 0)
     # pageNum, coords, matchRatio
 
-    for i in range(Page.get_num_subpages(const.PAGES, diff)):
-        LOGGER.info("Searching reward badge on page %s, radius %s",
-                    current_page.number, rad)
-        GUI.wait(0.4)
+    for _ in range(Page.get_num_subpages(const.PAGES, diff)):
+        playable_coords = {
+            (m.page_location.x, m.page_location.y)
+            for m in playable_maps if m.page == current_page.number
+        }
+        indexes = [i for i, coords in enumerate(c_list) if coords in playable_coords]
+        if indexes:
+            LOGGER.info("Searching reward badge on page %s, radius %s (%s playable slots)",
+                        current_page.number, rad, len(indexes))
+            GUI.wait(0.4)
+            scan_coords = [c_list[i] for i in indexes]
+            scan_thresholds = t_list if len(t_list) == 1 else [t_list[i] for i in indexes]
+            m_found, m_coords, m_ratio = locate(
+                filename, scan_coords, rad, scan_thresholds, mode, rou,
+                debug_mode=curr_debug_mode,
+            )
 
-        ### Check current page at each location in c_list ###
-        m_found, m_coords, m_ratio = locate(
-            filename, c_list, rad, t_list, mode, rou, debug_mode=curr_debug_mode
-        )
+            if curr_debug_mode:
+                print(f"# [{m_coords[0]} {m_coords[1]}] {percentage(m_ratio)} match.")
 
-        if curr_debug_mode:
-            print(f"# [{m_coords[0]} {m_coords[1]}] {percentage(m_ratio)} match.")
+            if m_ratio > notable[2]:
+                notable = (current_page, m_coords, m_ratio)
 
-        if m_ratio > notable[2]:
-            # notable keeps track of the current best
-            notable = (current_page, m_coords, m_ratio)
+            if m_found:
+                break
+        else:
+            LOGGER.info("Skipping reward scan on page %s: no maps with strategies",
+                        current_page.number)
 
-        # Quit if a match is found.
-        if m_found:
-            break
-
-        # Otherwise, go to the next page and try again.
         if curr_debug_mode:
             print("-> Next page.")
         current_page = navigate(Page.get_next_in_diff(const.PAGES, current_page))
 
-    notable_ratio = notable[2]
-
-    if m_found or (notable[0] is not None and notable_ratio > 0.01):
-        # Retrieve Location from given coords.
-        if m_found:
-            match_location = Location.get_loc_from_coords(m_coords)
-        else:
-            match_location = Location.get_loc_from_coords(notable[1])
-
-        # Handle bad result.
-        if match_location is None:
-            raise RuntimeError("find_rewards_map: Locate returned invalid coords.")
-
-        loc_num = Location.get_loc_num(match_location)  # Identify data index
-        prev_min_ratio = const.get_match(loc_num)  # Retrive data at given index
-
-        if not m_found:
-            print(
-                f"No {100*prev_min_ratio}% matches, but a "
-                f"{percentage(notable_ratio)} match was found."
-            )
-
-        if notable_ratio <= prev_min_ratio:
-            const.set_match(loc_num, notable_ratio, do_reporting=True)  # Update data.txt
-
-        # Return Map from given Location
-        return Map.get_map_from_location(
-            const.MAPS, notable[0].number, match_location
-        )
+    if m_found:
+        match_page, match_coords, match_ratio = current_page, m_coords, m_ratio
     else:
-        print("Done searching. [No matches found]")
-        return None
+        match_page, match_coords, match_ratio = notable
+        if match_page is None or match_ratio <= 0.01:
+            print("Done searching. [No matches found]")
+            return None
+
+    match_location = Location.get_loc_from_coords(match_coords)
+    if match_location is None:
+        raise RuntimeError("find_rewards_map: Locate returned invalid coords.")
+
+    loc_num = Location.get_loc_num(match_location)
+    threshold_index = 0 if len(t_list) == 1 else loc_num
+    prev_min_ratio = t_list[threshold_index]
+    if not m_found:
+        print(
+            f"No {100*prev_min_ratio}% matches, but a "
+            f"{percentage(match_ratio)} match was found."
+        )
+        if match_ratio <= prev_min_ratio:
+            const.set_match(threshold_index, match_ratio, do_reporting=True)
+
+    return Map.get_map_from_location(playable_maps, match_page.number, match_location)
 
 
 def percentage(decimal):
@@ -616,9 +624,8 @@ def main():
                 const.MAP_SELECTION_MODE,
             ),
         )
-    except ValueError:
-        print("Invalid settings.")
-        raise SystemError
+    except ValueError as exc:
+        raise ValueError(f"Invalid settings: {exc}") from exc
 
     GUI.wait_click(0, *const.UI_CLICKS["focus"])
 
@@ -641,7 +648,7 @@ def main():
             case 1:
                 m = Map.pick_rand(const.MAPS)
             case 2:  # Play maps in order
-                m = const.MAPS[i % len(const.MAPS)]
+                m = Map.pick_ordered(const.MAPS, i)
             case 3:
                 search_file = const.FILE_PREFIX + const.BADGE_NAME
                 m = find_rewards_map(diff=3, filename=search_file)
@@ -651,7 +658,7 @@ def main():
                 search_file = const.FILE_PREFIX + const.BADGE_NAME
                 m = find_rewards_map(diff=3, filename=search_file)
                 if m is None:
-                    m = const.MAPS[i % len(const.MAPS)]
+                    m = Map.pick_ordered(const.MAPS, i)
             case 5:
                 exp_rad = 0
                 search_file = const.FILE_PREFIX + const.BADGE_NAME
@@ -663,7 +670,7 @@ def main():
                         diff=3, filename=search_file, rad=exp_rad
                     )
                 if m is None:
-                    m = const.MAPS[i % len(const.MAPS)]
+                    m = Map.pick_ordered(const.MAPS, i)
             case _:
                 raise ValueError("Invalid Map Selection Mode.")
 

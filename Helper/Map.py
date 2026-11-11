@@ -107,14 +107,26 @@ def get_map_by_name(map_list: List[Map], map_name: str) -> Map:
             return m
 
 
-def pick_rand(map_list: List[Map]) -> Map:
-    """Choose a random map with at least one defined strategy."""
+def get_playable_maps(map_list: List[Map]) -> List[Map]:
+    """Return maps with at least one defined strategy."""
     playable_maps = [m for m in map_list if m.strategy]
     if not playable_maps:
-        raise ValueError("pick_rand: No maps have a defined strategy")
+        raise ValueError("No maps have a defined strategy")
+    return playable_maps
+
+
+def pick_rand(map_list: List[Map]) -> Map:
+    """Choose a random map with at least one defined strategy."""
+    playable_maps = get_playable_maps(map_list)
     n = len(playable_maps)
     a = randint(0, n - 1)
     return playable_maps[a]
+
+
+def pick_ordered(map_list: List[Map], index: int) -> Map:
+    """Choose the map for a loop index, skipping maps without strategies."""
+    playable_maps = get_playable_maps(map_list)
+    return playable_maps[index % len(playable_maps)]
 
 
 def get_map_from_location(

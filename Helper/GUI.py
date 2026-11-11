@@ -222,6 +222,8 @@ def check_input_vars(map_list: List[Map], params: List[any]) -> None:
     for m in map_list:
         if m.name == default_map:
             found = True
+            if map_selection_mode in (0, 3) and not m.strategy:
+                raise ValueError(f"Default map {default_map} has no strategy.")
             break
     if not found:
         raise ValueError("Invalid Default Map Name.")

@@ -2,6 +2,14 @@
 
 from typing import Tuple, List
 
+from Helper.UICalibration import (
+    HERO_GRID_BOTTOM_LAST_ROW_Y,
+    HERO_GRID_CLICKABLE_Y,
+    HERO_GRID_COLUMNS_X,
+    HERO_GRID_ROW_SPACING,
+    HERO_GRID_TOP_FIRST_ROW_Y,
+)
+
 
 class Hero:
     """Describe a hero and the row and column of its selection button."""
@@ -20,17 +28,22 @@ class Hero:
         """Return the hero's name."""
         return self.name
 
-    def get_coords(self) -> Tuple[int, int]:
-        """Return the hero button's screen coordinates."""
-        horiz_adjust = 100
-        horiz_scaling = 150
+    def get_card_position(self, last_row: int) -> Tuple[str, Tuple[int, int]]:
+        """Return the scroll anchor ("top"/"bottom") and card center for this hero.
 
-        vert_adjust = 200
-        vert_scaling = 200
-
-        x = self.col * horiz_scaling + horiz_adjust
-        y = self.row * vert_scaling + vert_adjust
-        return (x, y)
+        ``last_row`` is the grid's final row, which determines the bottom anchor.
+        """
+        if not 0 <= self.col < len(HERO_GRID_COLUMNS_X) or not 0 <= self.row <= last_row:
+            raise ValueError(f"{self.name}: Slot ({self.row}, {self.col}) is outside the hero grid")
+        x = HERO_GRID_COLUMNS_X[self.col]
+        low, high = HERO_GRID_CLICKABLE_Y
+        top_y = HERO_GRID_TOP_FIRST_ROW_Y + self.row * HERO_GRID_ROW_SPACING
+        if low <= top_y <= high:
+            return "top", (x, top_y)
+        bottom_y = HERO_GRID_BOTTOM_LAST_ROW_Y - (last_row - self.row) * HERO_GRID_ROW_SPACING
+        if low <= bottom_y <= high:
+            return "bottom", (x, bottom_y)
+        raise ValueError(f"{self.name}: Row {self.row} is not reachable from either scroll anchor")
 
 
 def get_heroes(filename: str) -> List[Hero]:

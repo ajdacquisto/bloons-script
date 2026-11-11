@@ -69,3 +69,29 @@ def ReleaseKey(hexKeyCode):  # pylint: disable=invalid-name
     ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008 | 0x0002, 0, ctypes.pointer(extra))
     x = Input(ctypes.c_ulong(1), ii_)
     ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
+
+WHEEL_DELTA = 120
+
+
+def _send_mouse(flags: int, dx: int = 0, dy: int = 0, data: int = 0) -> None:
+    extra = ctypes.c_ulong(0)
+    ii_ = Input_I()
+    ii_.mi = MouseInput(dx, dy, ctypes.c_ulong(data & 0xFFFFFFFF).value, flags, 0,
+                        ctypes.pointer(extra))
+    x = Input(ctypes.c_ulong(0), ii_)
+    ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+
+
+def nudge_mouse() -> None:
+    """Send a tiny relative move so the game registers a cursor placed with SetCursorPos."""
+    _send_mouse(0x0001, 3, 0)
+    _send_mouse(0x0001, -3, 0)
+
+
+def scroll_wheel(notches: int) -> None:
+    """Send whole wheel notches; positive scrolls up, negative scrolls down.
+
+    The game ignores PyAutoGUI's legacy wheel events, so use SendInput.
+    """
+    _send_mouse(0x0800, data=notches * WHEEL_DELTA)

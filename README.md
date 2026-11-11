@@ -81,10 +81,16 @@ scores or timeout best scores and coordinates. `VISION_POLL_INTERVAL` controls
 the delay between unsuccessful polling sweeps (default 0.2 seconds); `STOP_KEY`
 is checked during polling. Set `LOG_LEVEL` to `"WARNING"` in `constant.py` to
 hide informational messages. Screenshots are not saved by this logging.
+Hero-selection checks use a compact checkmark crop with tolerant color rounding
+so the card artwork beneath the badge does not prevent verification.
 
 Deflation waits up to `MAP_LOADING_TIMEOUT_DEFLATION` seconds (default 30) for
 its introductory OK prompt. A timeout preserves the vision diagnostics and stops
 the run without clicking through or executing the strategy.
+
+Injected scan-code keys are held for `KEY_HOLD_SECONDS` (default 0.1) from
+`Helper/UICalibration.py`; near-instant presses can be missed by the game.
+Escape uses its existing direct-input path.
 
 The `Helper` folder contains the map, page, and strategy data used by the
 automation. Matching templates and reference screenshots are in `Media`.
@@ -104,8 +110,16 @@ to change it.
 Hero names and zero-based selection slots come from `Helper/heroes.dat`
 (`Name,Row,Col`), loaded before map strategies are built. Edit that file when
 the hero grid changes; no separate hard-coded hero list needs updating.
-`None,-1,-1` means the strategy does not select or place a hero. Slots below the
-visible grid may require scrolling support, which is not currently automated.
+`None,-1,-1` means the strategy does not select or place a hero.
+
+Hero selection scrolls the grid fully to the top or bottom (whichever anchor
+shows the card), clicks the card, and confirms the selected checkmark
+(`Media/heroSelected.png`) before leaving the screen; one retry is made, then
+the run stops with an error. Card positions are derived from the last row in
+`heroes.dat`, so adding heroes needs no coordinate changes. Grid geometry lives
+in `Helper/UICalibration.py` (`HERO_GRID_*`). The game ignores PyAutoGUI wheel
+events, so scrolling uses `SendInput` wheel notches after a small relative mouse
+move that registers the hover.
 
 ## Development
 

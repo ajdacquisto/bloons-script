@@ -7,6 +7,7 @@ from Helper.Map import Map, map_setup
 from Helper.Hero import get_heroes
 from Helper.Page import get_pages
 from Helper.UICalibration import UI_CLICKS, UI_TARGETS as UI_TARGETS
+from Helper.UICalibration import HERO_SELECTED_OFFSET as HERO_SELECTED_OFFSET
 
 
 PROJECT_DIR = Path(__file__).resolve().parent

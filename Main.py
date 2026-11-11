@@ -25,6 +25,7 @@ def wait_for_ui(name, timeout, coords=None):
         const.FILE_PREFIX + target.filename,
         [target.coords] if coords is None else coords,
         timeout, [target.threshold], search_radius=target.radius, label=name,
+        rounding=target.rounding,
     )
 
 
@@ -37,6 +38,7 @@ def wait_for_ui_any(names, timeout):
         timeout,
         thresholds=[[target.threshold] for target in targets],
         search_radii=[target.radius for target in targets],
+        roundings=[target.rounding for target in targets],
         labels=list(names),
     )
 
@@ -118,7 +120,7 @@ def beat_map(m) -> None:
                 strategy_to_use.get_game_mode(), strategy_to_use.get_hero().get_name())
 
     # According to strategy: select the hero, difficulty, & gamemode
-    GUI.select_hero(strategy_to_use.get_hero())
+    select_hero_smart(strategy_to_use.get_hero())
     select_difficulty_smart(strategy_to_use.get_game_difficulty())
     select_gamemode_smart(strategy_to_use.get_game_mode())
 
@@ -158,6 +160,32 @@ def beat_map(m) -> None:
             return False
         case _:
             raise ValueError("beat_map: Invalid game result.")
+
+
+def select_hero_smart(hero, attempts=2):
+    """Select a hero by scrolling to its card, then confirm its selected checkmark."""
+    if hero.get_name() == "None":
+        return
+    last_row = max(h.row for h in Map.Map.HEROES)
+    anchor, card = hero.get_card_position(last_row)
+    dx, dy = const.HERO_SELECTED_OFFSET
+    check = (card[0] + dx, card[1] + dy)
+    LOGGER.info("Selecting hero %s: row %s col %s via %s anchor at %s",
+                hero.get_name(), hero.row, hero.col, anchor, card)
+    GUI.hero_change_button()
+    GUI.wait(1.0)
+    for attempt in range(1, attempts + 1):
+        GUI.pick_hero_card(anchor, card)
+        try:
+            wait_for_ui("hero_selected", 3, coords=[check])
+            break
+        except TimeoutError as exc:
+            if attempt == attempts:
+                raise RuntimeError(
+                    f"Could not confirm {hero.get_name()} was selected"
+                ) from exc
+            LOGGER.warning("Hero selection not confirmed; retrying (%s/%s)", attempt, attempts)
+    GUI.back_arrow_button()
 
 
 def adjust_auto_start_smart(target_game_mode: str) -> None:
@@ -418,16 +446,22 @@ def _wait_for_matches(
     thresholds: Sequence[Sequence[float]],
     radii: list[int],
     labels: list[str],
+    roundings: list[int] | None = None,
 ) -> tuple[int, tuple[int, int]]:
     """Poll with cancellation, bounded progress logs, and per-target diagnostics."""
     if timeout < 0:
         raise ValueError("Vision timeout must be nonnegative")
     if const.VISION_POLL_INTERVAL <= 0 or const.VISION_LOG_INTERVAL <= 0:
         raise ValueError("Vision poll and log intervals must be positive")
+    if roundings is None:
+        roundings = [1] * len(filenames)
     if not filenames or not (
-        len(filenames) == len(coord_lists) == len(thresholds) == len(radii) == len(labels)
+        len(filenames) == len(coord_lists) == len(thresholds) == len(radii)
+        == len(labels) == len(roundings)
     ):
         raise ValueError("Vision targets must have matching, nonempty settings")
+    if any(rounding < 1 for rounding in roundings):
+        raise ValueError("Vision rounding values must be positive")
 
     start = time.monotonic()
     deadline = start + timeout
@@ -449,11 +483,13 @@ def _wait_for_matches(
 
     while True:
         GUI.exit_key_check()
-        for index, (filename, coords, limits, radius) in enumerate(
-            zip(filenames, coord_lists, thresholds, radii)
+        for index, (filename, coords, limits, radius, rounding) in enumerate(
+            zip(filenames, coord_lists, thresholds, radii, roundings)
         ):
             GUI.exit_key_check()
-            found, match_coords, score = locate(filename, coords, radius, limits, 0, 1)
+            found, match_coords, score = locate(
+                filename, coords, radius, limits, 0, rounding
+            )
             if score > best[index][0]:
                 best[index] = (score, match_coords)
             if found:
@@ -476,7 +512,8 @@ def _wait_for_matches(
 
 
 def wait_for_badge(
-    filename, coords, timeout, threshold=None, *, search_radius=0, label=None
+    filename, coords, timeout, threshold=None, *, search_radius=0, label=None,
+    rounding=1,
 ):
     """Wait for one template; legacy scalar and per-coordinate thresholds work."""
     if threshold is None:
@@ -485,7 +522,7 @@ def wait_for_badge(
         threshold = [threshold]
     _wait_for_matches(
         [filename], [coords], timeout, [threshold], [search_radius],
-        [label if label is not None else Path(filename).name],
+        [label if label is not None else Path(filename).name], [rounding],
     )
     return True
 
@@ -498,6 +535,7 @@ def wait_for_badge_2(
     *,
     thresholds=None,
     search_radii=None,
+    roundings=None,
     labels=None,
 ):
     """Wait for any of the supplied templates and return its index."""
@@ -509,6 +547,7 @@ def wait_for_badge_2(
         thresholds if thresholds is not None else [match_threshold] * count,
         search_radii if search_radii is not None else [0] * count,
         labels if labels is not None else [Path(name).name for name in filenames],
+        roundings,
     )
     return index
 

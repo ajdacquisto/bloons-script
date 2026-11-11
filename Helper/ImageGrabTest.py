@@ -23,6 +23,12 @@ def display(im):
     im.show()
 
 
+def grab_game_screen():
+    """Capture the configured 1920x1080 game display."""
+    left, top = const.get_desktop_coords(0, 0)
+    return ImageGrab.grab(bbox=(left, top, left + 1920, top + 1080), all_screens=True)
+
+
 # ..............................................................................
 def locate(
     filename,
@@ -57,10 +63,7 @@ def locate(
         thresh_list = thresh_list * n
 
     src_img = Image.open(filename)  # Load source image
-    left, top = const.get_desktop_coords(0, 0)
-    screen_img = ImageGrab.grab(
-        bbox=(left, top, left + 1920, top + 1080), all_screens=True
-    )
+    screen_img = grab_game_screen()
 
     best_info = (-1, False, (0, 0), 0)
     # index, meetsReqt, coords, ratio

@@ -11,6 +11,7 @@ class UITarget:
     coords: tuple[int, int]
     threshold: float = 0.07
     radius: int = 0
+    rounding: int = 1
 
 
 # Uncalibrated targets retain their legacy thresholds and coordinates.
@@ -30,7 +31,22 @@ UI_TARGETS = {
     "victory": UITarget("win.png", (944, 209)),
     "defeat": UITarget("loss.png", (944, 209)),
     "collect": UITarget("collectBadge.png", (960, 679)),
+    # Selected-hero checkmark; centers are derived from the clicked card.
+    "hero_selected": UITarget("heroSelected.png", (0, 0), 0.40, 2, rounding=2),
 }
+
+# Hero grid geometry, measured with the list scrolled fully up ("top") and
+# fully down ("bottom"). Rows are reachable from whichever anchor keeps the
+# card center inside HERO_GRID_CLICKABLE_Y.
+HERO_GRID_COLUMNS_X = (103, 254, 405)
+HERO_GRID_ROW_SPACING = 192
+HERO_GRID_TOP_FIRST_ROW_Y = 222
+HERO_GRID_BOTTOM_LAST_ROW_Y = 905
+HERO_GRID_CLICKABLE_Y = (200, 920)
+HERO_GRID_SCROLL_NOTCHES = 20
+HERO_GRID_REGION = (30, 130, 480, 1075)
+HERO_SELECTED_OFFSET = (49, -61)
+KEY_HOLD_SECONDS = 0.1
 
 # Click positions can differ from a template's center.
 UI_CLICKS = {
@@ -44,6 +60,7 @@ UI_CLICKS = {
     "overwrite": (1137, 729),
     "loaded": (969, 758),
     "change_hero": (104, 990),
+    "hero_grid": (254, 600),
     "select_hero": (1116, 615),
     "back": (80, 50),
     "victory_next": (958, 909),

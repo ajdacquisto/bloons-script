@@ -25,7 +25,7 @@ class UICalibrationTests(unittest.TestCase):
         with (
             patch.object(Main, "select_strategy", return_value=strategy),
             patch.object(GUI, "wait_click"),
-            patch.object(GUI, "select_hero"),
+            patch.object(Main, "select_hero_smart"),
             patch.object(Main, "select_difficulty_smart"),
             patch.object(Main, "select_gamemode_smart"),
             patch.object(Main, "overwrite_save_smart"),
@@ -82,8 +82,21 @@ class UICalibrationTests(unittest.TestCase):
         ):
             self.assertTrue(Main.wait_for_ui("easy", 4))
         wait.assert_called_once_with(
-            "templates\\selectEasy.png", [(620, 410)], 4, [0.85],
-            search_radius=3, label="easy",
+                "templates\\selectEasy.png", [(620, 410)], 4, [0.85],
+            search_radius=3, label="easy", rounding=1,
+        )
+
+    def test_selected_hero_uses_tolerant_color_rounding(self):
+        target = replace(const.UI_TARGETS["hero_selected"], coords=(303, 737))
+        with (
+            patch.dict(const.UI_TARGETS, hero_selected=target),
+            patch.object(const, "FILE_PREFIX", "templates\\", create=True),
+            patch.object(Main, "wait_for_badge", return_value=True) as wait,
+        ):
+            self.assertTrue(Main.wait_for_ui("hero_selected", 3))
+        wait.assert_called_once_with(
+            "templates\\heroSelected.png", [(303, 737)], 3, [0.4],
+            search_radius=2, label="hero_selected", rounding=2,
         )
 
     def test_alternatives_preserve_individual_calibration(self):

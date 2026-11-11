@@ -159,7 +159,7 @@ class ExistingBehaviorTests(unittest.TestCase):
         known = Location.getLoc(locName="Top left")
 
         self.assertEqual((location.getName(), location.getX(), location.getY()), ("Example", 4, 5))
-        self.assertEqual(hero.get_coords(), (400, 400))
+        self.assertEqual(hero.get_card_position(last_row=5), ("top", (405, 414)))
         self.assertIs(Location.get_loc_from_coords(C=(697, 296)), known)
         self.assertEqual(Location.get_loc_num(inp_L=known), 0)
 
@@ -211,17 +211,10 @@ class ExistingBehaviorTests(unittest.TestCase):
 
     def test_gui_legacy_keywords(self):
         """GUI entry points retain their established keyword names."""
-        hero = Hero("Example", (1, 2))
-        with (
-            patch.object(GUI, "wait_click") as wait_click,
-            patch.object(GUI, "hero_change_button"),
-            patch.object(GUI, "hero_select_button"),
-            patch.object(GUI, "back_arrow_button"),
-        ):
+        with patch.object(GUI, "wait_click") as wait_click:
             GUI.play_button(waitTime=0)
-            GUI.select_hero(H=hero)
 
-        self.assertEqual(wait_click.call_args_list, [call(0, 960, 945), call(0.5, 400, 400)])
+        self.assertEqual(wait_click.call_args_list, [call(0, 960, 945)])
 
     def test_validate_map_settings(self):
         """Valid settings pass while invalid waits are rejected."""

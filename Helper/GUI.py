@@ -5,15 +5,17 @@ import time
 from typing import List
 
 import keyboard
+import numpy as np
 import pyautogui as pg
 import pydirectinput
 
 import constant as const
 import Helper.Page as Page
-from Helper.Hero import Hero
-from Helper.KeyboardInput import PressKey, ReleaseKey
+from Helper.ImageGrabTest import grab_game_screen
+from Helper.KeyboardInput import PressKey, ReleaseKey, nudge_mouse, scroll_wheel
 from Helper.Map import Map
 from Helper.Tower import Tower
+from Helper.UICalibration import HERO_GRID_REGION, HERO_GRID_SCROLL_NOTCHES, KEY_HOLD_SECONDS
 
 
 LOGGER = logging.getLogger(__name__)
@@ -147,7 +149,10 @@ def key_push(c: str) -> None:
             raise ValueError(f"key_push: Invalid character. {c}")
 
     PressKey(code)
-    ReleaseKey(code)
+    try:
+        wait(KEY_HOLD_SECONDS)
+    finally:
+        ReleaseKey(code)
 
 
 def exit_key_check() -> None:
@@ -287,14 +292,46 @@ def auto_start_toggle_switch(waittime) -> None:
     wait_click(waittime, *const.UI_CLICKS["auto_start"])
 
 
-def select_hero(H: Hero) -> None:  # pylint: disable=invalid-name
-    """Select the specified hero unless the strategy uses no hero."""
-    if H.name != "None":
-        x, y = H.get_coords()
-        hero_change_button()
-        wait_click(0.5, x, y)  # Hero coords
-        hero_select_button()
-        back_arrow_button()
+def wait_for_still(region, timeout: float = 3.0, interval: float = 0.15,
+                   tolerance: float = 0.5) -> None:
+    """Wait until a game-local region stops changing between captures."""
+    deadline = time.monotonic() + timeout
+    previous = np.asarray(grab_game_screen().crop(region).convert("L"), dtype=float)
+    while True:
+        exit_key_check()
+        time.sleep(interval)
+        current = np.asarray(grab_game_screen().crop(region).convert("L"), dtype=float)
+        if np.abs(current - previous).mean() < tolerance:
+            return
+        if time.monotonic() >= deadline:
+            raise TimeoutError(f"Region {region} still moving after {timeout}s")
+        previous = current
+
+
+def scroll_hero_grid(anchor: str) -> None:
+    """Scroll the hero list fully to the "top" or "bottom" and wait for it to settle."""
+    if anchor not in ("top", "bottom"):
+        raise ValueError(f"Unknown hero grid anchor: {anchor}")
+    step = 1 if anchor == "top" else -1
+    pg.moveTo(*const.get_desktop_coords(*const.UI_CLICKS["hero_grid"]))
+    # The game ignores SetCursorPos until real mouse motion arrives, and it
+    # drops wheel notches that arrive before hover registers or too quickly.
+    nudge_mouse()
+    wait(0.3)
+    for _ in range(HERO_GRID_SCROLL_NOTCHES):
+        exit_key_check()
+        scroll_wheel(step)
+        time.sleep(0.1)
+    center_cursor()
+    wait_for_still(HERO_GRID_REGION)
+
+
+def pick_hero_card(anchor: str, card: tuple[int, int]) -> None:
+    """Scroll to a card's anchor, click the card, then press Select."""
+    scroll_hero_grid(anchor)
+    wait_click(0.2, *card)
+    hero_select_button()
+    center_cursor()
 
 
 def page_button(difficulty: int, waittime: float = 0) -> None:

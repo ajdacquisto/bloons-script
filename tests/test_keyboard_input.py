@@ -79,6 +79,7 @@ class KeyPushTests(unittest.TestCase):
         """A recognized key still sends its press and release."""
         with (
             patch.object(GUI, "exit_key_check"),
+            patch.object(GUI, "wait"),
             patch.object(GUI, "PressKey") as press,
             patch.object(GUI, "ReleaseKey") as release,
         ):
@@ -86,6 +87,36 @@ class KeyPushTests(unittest.TestCase):
 
         press.assert_called_once_with(0x10)
         release.assert_called_once_with(0x10)
+
+    def test_key_is_held_for_a_game_frame_before_release(self):
+        """A scan-code press lasts long enough for the game to register it."""
+        events = Mock()
+        with (
+            patch.object(GUI, "exit_key_check"),
+            patch.object(GUI, "PressKey", events.press),
+            patch.object(GUI, "wait", events.wait),
+            patch.object(GUI, "ReleaseKey", events.release),
+        ):
+            GUI.key_push("u")
+
+        self.assertEqual(events.mock_calls, [
+            call.press(0x16),
+            call.wait(0.1),
+            call.release(0x16),
+        ])
+
+    def test_cancel_during_key_hold_still_releases_the_key(self):
+        """A stop request while a key is held cannot leave it stuck down."""
+        with (
+            patch.object(GUI, "exit_key_check"),
+            patch.object(GUI, "PressKey"),
+            patch.object(GUI, "wait", side_effect=SystemExit),
+            patch.object(GUI, "ReleaseKey") as release,
+            self.assertRaises(SystemExit),
+        ):
+            GUI.key_push("u")
+
+        release.assert_called_once_with(0x16)
 
     def test_escape_uses_direct_input(self):
         """Escape retains its separate direct-input path."""

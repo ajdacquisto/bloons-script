@@ -138,6 +138,8 @@ def beat_map(m) -> None:
         except TimeoutError:
             LOGGER.info("No introductory prompt detected; continuing Standard mode")
 
+    dismiss_monkey_teams_smart()
+
     # Adjust auto start
     try:
         adjust_auto_start_smart(strategy_to_use.get_game_mode())
@@ -273,6 +275,36 @@ def map_loading_wait(timeout=20, post_load_wait=0.8):
     wait_for_ui("loaded", timeout)
     GUI.wait_click(0, *const.UI_CLICKS["loaded"])
     GUI.wait(post_load_wait)
+
+
+def dismiss_monkey_teams_smart(timeout=2):
+    """Dismiss the optional post-load notice and verify that it closes."""
+    try:
+        wait_for_ui("monkey_teams", timeout)
+    except TimeoutError:
+        LOGGER.info("No Monkey Teams notice detected; continuing")
+        return
+
+    GUI.wait_click(0, *const.UI_CLICKS["monkey_teams"])
+    deadline = time.monotonic() + 3
+    GUI.wait(0.8)
+    target = const.UI_TARGETS["monkey_teams"]
+    while True:
+        GUI.exit_key_check()
+        found, _, score = locate(
+            const.FILE_PREFIX + target.filename, [target.coords], target.radius,
+            [target.threshold], 0, target.rounding,
+        )
+        if not found:
+            LOGGER.info("Monkey Teams notice dismissed")
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError(
+                f"Monkey Teams notice still visible after OK click "
+                f"({score:.1%} match); stopping before strategy execution."
+            )
+        GUI.wait(min(const.VISION_POLL_INTERVAL, remaining))
 
 
 def perform_strategy(s, log_final_wait=False):

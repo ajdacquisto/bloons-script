@@ -410,7 +410,7 @@ def get_strategy(m: Map) -> List[Strategy]:
                 [
                     Tower("Hero", [694, 660], [0, 0, 0], 0),
                     Tower("Monkey Buccaneer", [847, 562], [4, 0, 2], 0),
-                    Tower("Alchemist", [665, 464], [4, 0, 2], 0),
+                    Tower("Alchemist", [764, 778], [3, 0, 2], 0),
                     Tower("Wizard Monkey", [1006, 430], [0, 2, 2], 0),
                     Tower("Ninja Monkey", [851, 767], [2, 0, 2], 0),
                 ],

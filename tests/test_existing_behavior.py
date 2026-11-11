@@ -161,6 +161,35 @@ class ExistingBehaviorTests(unittest.TestCase):
         )
         self.assertEqual(actions[1].get_info(), 291)
 
+    def test_ouch_uses_the_validated_alchemist_setup(self):
+        """Keep all five tower positions and the calibrated upgrade order."""
+        maps = Map.map_setup(str(ROOT / "Helper" / "mapLocations.dat"))
+        ouch = Map.get_map_by_name(maps, "Ouch")
+        strategies = ouch.strategy
+        if not isinstance(strategies, list):
+            self.fail("Expected Ouch strategies")
+        self.assertEqual(len(strategies), 1)
+        strategy = strategies[0]
+        self.assertEqual(strategy.get_game_mode(), "Deflation")
+        self.assertEqual(strategy.get_hero().get_name(), "Captain Churchill")
+        actions = strategy.get_actions()
+        self.assertEqual(
+            [action.get_name() for action in actions],
+            ["Tower", "Start", "Ability", "WaitSec"],
+        )
+        self.assertEqual(
+            [(tower.name, tower.get_position(), tower.get_upgrades(), tower.targeting)
+             for tower in actions[0].get_info()],
+            [
+                ("Hero", [694, 660], [0, 0, 0], 0),
+                ("Monkey Buccaneer", [847, 562], [4, 0, 2], 0),
+                ("Alchemist", [764, 778], [3, 0, 2], 0),
+                ("Wizard Monkey", [1006, 430], [0, 2, 2], 0),
+                ("Ninja Monkey", [851, 767], [2, 0, 2], 0),
+            ],
+        )
+        self.assertEqual([action.get_info() for action in actions[1:]], [299, "1", 2])
+
     def test_reward_search_visits_all_expert_subpages(self):
         """A search without a match scans and cycles through all expert pages."""
         pages = Page.get_pages(str(ROOT / "Helper" / "pageInfo.dat"))

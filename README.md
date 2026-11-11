@@ -99,6 +99,12 @@ Deflation waits up to `MAP_LOADING_TIMEOUT_DEFLATION` seconds (default 30) for
 its introductory OK prompt. A timeout preserves the vision diagnostics and stops
 the run without clicking through or executing the strategy.
 
+After loading, both game modes check for the optional Monkey Teams notice for
+up to two seconds. Only a detected notice triggers its OK click; the macro
+verifies that it disappears before changing Auto Start or placing towers.
+If it remains visible, the run stops with an error instead of sending the
+strategy's inputs into the popup.
+
 Injected scan-code keys are held for `KEY_HOLD_SECONDS` (default 0.1) from
 `Helper/UICalibration.py`; near-instant presses can be missed by the game.
 Escape uses its existing direct-input path.
@@ -114,6 +120,11 @@ placements in `Helper/Map.py`. Tower-action logs report input commands, not
 confirmation that a tower was placed or an upgrade was affordable.
 The live-checked budget used Monkey Knowledge bonuses and $20,200 starting
 cash, with only $37 remaining after setup.
+
+Ouch places its 3-0-2 Alchemist near Churchill and the Ninja, with the Carrier
+in range. The previous Alchemist location did not place, and the 4-0-2 upgrade
+left too little for the intended Ninja upgrades. A manually assembled run
+using Monkey Knowledge and $20,200 starting cash won with 200 lives remaining.
 
 Map-selection pages are defined in `Helper/pageInfo.dat`; navigation derives
 each difficulty's page count from this file. Keep page numbers sequential from

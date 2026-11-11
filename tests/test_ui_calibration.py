@@ -2,7 +2,7 @@
 
 import unittest
 from dataclasses import replace
-from unittest.mock import call, patch
+from unittest.mock import DEFAULT, Mock, call, patch
 
 from PIL import Image
 
@@ -72,6 +72,121 @@ class UICalibrationTests(unittest.TestCase):
         self.assertEqual(operations.mock_calls, [
             call.click(0, 1338, 977), call.center(),
         ])
+
+    def test_post_load_notice_is_checked_before_auto_start_and_strategy(self):
+        for mode, intro_error in (
+            ("Deflation", None), ("Standard", None),
+            ("Standard", TimeoutError("no introductory prompt")),
+        ):
+            with self.subTest(mode=mode, intro_error=intro_error):
+                strategy = Mock()
+                strategy.get_game_mode.return_value = mode
+                game_map = Mock()
+                game_map.page_location.x = 100
+                game_map.page_location.y = 200
+                with (
+                    patch.object(Main, "select_strategy", return_value=strategy),
+                    patch.multiple(
+                        Main, select_hero_smart=DEFAULT,
+                        select_difficulty_smart=DEFAULT, select_gamemode_smart=DEFAULT,
+                        overwrite_save_smart=DEFAULT,
+                    ),
+                    patch.object(Main, "map_loading_wait", side_effect=intro_error) as load,
+                    patch.object(Main, "dismiss_monkey_teams_smart") as notice,
+                    patch.object(Main, "adjust_auto_start_smart") as auto_start,
+                    patch.object(Main, "perform_strategy") as perform,
+                    patch.object(Main, "check_game_result", return_value=0),
+                    patch.multiple(
+                        GUI, wait_click=DEFAULT, victory_next_button=DEFAULT,
+                        victory_home_button=DEFAULT,
+                    ),
+                    patch.object(const, "MAP_LOADING_TIMEOUT_DEFLATION", 30, create=True),
+                ):
+                    operations = Mock()
+                    for name, operation in (
+                        ("load", load), ("notice", notice),
+                        ("auto_start", auto_start), ("perform", perform),
+                    ):
+                        operations.attach_mock(operation, name)
+                    self.assertTrue(Main.beat_map(game_map))
+                self.assertEqual(operations.mock_calls, [
+                    call.load(timeout=30 if mode == "Deflation" else 6,
+                              post_load_wait=0.8),
+                    call.notice(), call.auto_start(mode),
+                    call.perform(strategy, log_final_wait=True),
+                ])
+
+    def test_absent_monkey_teams_notice_never_clicks(self):
+        with (
+            patch.object(Main, "wait_for_ui", side_effect=TimeoutError) as wait,
+            patch.object(GUI, "wait_click") as click,
+            patch.object(Main, "locate") as locate,
+            self.assertLogs(Main.LOGGER, level="INFO") as logs,
+        ):
+            Main.dismiss_monkey_teams_smart()
+        wait.assert_called_once_with("monkey_teams", 2)
+        click.assert_not_called()
+        locate.assert_not_called()
+        self.assertIn("No Monkey Teams notice detected", logs.output[-1])
+
+    def test_monkey_teams_notice_clicks_once_and_waits_for_disappearance(self):
+        target = const.UI_TARGETS["monkey_teams"]
+        with (
+            patch.object(Main, "wait_for_ui") as wait,
+            patch.object(const, "FILE_PREFIX", "templates\\", create=True),
+            patch.object(GUI, "wait_click") as click,
+            patch.object(GUI, "wait") as sleep,
+            patch.object(GUI, "exit_key_check"),
+            patch.object(Main, "locate", side_effect=[
+                (True, target.coords, 1.0), (False, target.coords, 0.1),
+            ]) as locate,
+        ):
+            Main.dismiss_monkey_teams_smart()
+        wait.assert_called_once_with("monkey_teams", 2)
+        click.assert_called_once_with(0, *const.UI_CLICKS["monkey_teams"])
+        self.assertEqual(locate.call_count, 2)
+        locate.assert_called_with(
+            "templates\\monkeyTeams.png", [target.coords], target.radius,
+            [target.threshold], 0, target.rounding,
+        )
+        self.assertEqual(sleep.call_args_list, [call(0.8), call(const.VISION_POLL_INTERVAL)])
+
+    def test_monkey_teams_notice_that_does_not_close_stops(self):
+        clock = [0.0]
+
+        def sleep(seconds):
+            clock[0] += seconds
+
+        with (
+            patch.object(Main, "wait_for_ui"),
+            patch.object(const, "FILE_PREFIX", "", create=True),
+            patch.object(Main.time, "monotonic", side_effect=lambda: clock[0]),
+            patch.object(GUI, "wait_click") as click,
+            patch.object(GUI, "wait", side_effect=sleep),
+            patch.object(GUI, "exit_key_check"),
+            patch.object(Main, "locate", return_value=(True, (960, 392), 1.0)),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "Monkey Teams notice still visible"):
+                Main.dismiss_monkey_teams_smart()
+        click.assert_called_once()
+        self.assertAlmostEqual(clock[0], 3)
+
+    def test_monkey_teams_detection_errors_and_cancellation_propagate(self):
+        for error in (OSError("capture failed"), SystemExit()):
+            for detected in (False, True):
+                with (
+                    self.subTest(error=type(error).__name__, detected=detected),
+                    patch.object(Main, "wait_for_ui",
+                                 side_effect=None if detected else error),
+                    patch.object(const, "FILE_PREFIX", "", create=True),
+                    patch.object(Main, "locate", side_effect=error),
+                    patch.object(GUI, "wait"),
+                    patch.object(GUI, "exit_key_check"),
+                    patch.object(GUI, "wait_click") as click,
+                ):
+                    with self.assertRaises(type(error)):
+                        Main.dismiss_monkey_teams_smart()
+                self.assertEqual(click.call_count, int(detected))
 
     def test_single_target_uses_central_settings(self):
         """A changed target supplies its filename, center, radius, and threshold."""
@@ -193,7 +308,8 @@ class UICalibrationTests(unittest.TestCase):
     def test_calibrated_assets_tolerate_two_pixel_displacement(self):
         """Actual refreshed assets remain detectable within their configured radius."""
         for name in ("expert", "easy", "standard", "deflation",
-                     "auto_start_off", "auto_start_on", "hero_selected"):
+                     "auto_start_off", "auto_start_on", "hero_selected",
+                     "monkey_teams"):
             target = const.UI_TARGETS[name]
             coords = target.coords
             if name == "hero_selected":

@@ -336,10 +336,14 @@ def get_strategy(m: Map) -> List[Strategy]:
             Action(
                 "Tower",
                 [
-                    Tower("Monkey Village", [897, 417], [2, 0, 2], 0),
-                    Tower("Super Monkey", [1004, 484], [0, 3, 2], 0),
-                    Tower("Wizard Monkey", [1015, 400], [0, 3, 2], 0),
-                    Tower("Alchemist", [905, 498], [3, 0, 0], 0),
+                    Tower("Monkey Village", [894, 418], [0, 0, 2], 0),
+                    Tower("Monkey Village", [777, 454], [0, 0, 2], 0),
+                    Tower("Super Monkey", [1003, 485], [0, 3, 1], 0),
+                    Tower("Wizard Monkey", [1004, 397], [0, 3, 0], 0),
+                    Tower("Alchemist", [902, 497], [3, 0, 1], 0),
+                    Tower("upgrade", [894, 418], [0, 1, 0], 0),
+                    Tower("sell", [777, 454], [0, 0, 0], 0),
+                    Tower("upgrade", [894, 418], [0, 1, 0], 0),
                 ],
             ),
             Action("Start", 291),

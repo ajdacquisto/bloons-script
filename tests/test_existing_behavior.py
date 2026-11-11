@@ -133,6 +133,34 @@ class ExistingBehaviorTests(unittest.TestCase):
             [[x + 1920, y - 290] for x, y in recorded_positions],
         )
 
+    def test_workshop_stacks_discounts_before_selling_second_village(self):
+        """Preserve the translated coordinates and exact purchase/sell order."""
+        maps = Map.map_setup(str(ROOT / "Helper" / "mapLocations.dat"))
+        workshop = Map.get_map_by_name(maps, "Workshop")
+        strategies = workshop.strategy
+        if not isinstance(strategies, list):
+            self.fail("Expected Workshop strategies")
+        self.assertEqual(len(strategies), 1)
+        strategy = strategies[0]
+        self.assertEqual(strategy.get_game_mode(), "Deflation")
+        actions = strategy.get_actions()
+        self.assertEqual([action.get_name() for action in actions], ["Tower", "Start"])
+        self.assertEqual(
+            [(tower.name, tower.get_position(), tower.get_upgrades(), tower.targeting)
+             for tower in actions[0].get_info()],
+            [
+                ("Monkey Village", [894, 418], [0, 0, 2], 0),
+                ("Monkey Village", [777, 454], [0, 0, 2], 0),
+                ("Super Monkey", [1003, 485], [0, 3, 1], 0),
+                ("Wizard Monkey", [1004, 397], [0, 3, 0], 0),
+                ("Alchemist", [902, 497], [3, 0, 1], 0),
+                ("upgrade", [894, 418], [0, 1, 0], 0),
+                ("sell", [777, 454], [0, 0, 0], 0),
+                ("upgrade", [894, 418], [0, 1, 0], 0),
+            ],
+        )
+        self.assertEqual(actions[1].get_info(), 291)
+
     def test_reward_search_visits_all_expert_subpages(self):
         """A search without a match scans and cycles through all expert pages."""
         pages = Page.get_pages(str(ROOT / "Helper" / "pageInfo.dat"))

@@ -35,6 +35,16 @@ in `constant.py` before running. The automation relies on fixed screen
 coordinates and image templates for a 1920x1080 layout, so a different
 resolution, UI scale, or game layout can cause incorrect input.
 
+To display the live mouse coordinates without running the macro, use:
+
+```powershell
+python .\mouse_coords.py
+```
+
+This standalone script uses only Python's standard library and the Windows
+API. It prints desktop coordinates. Press **Caps Lock** to pause or resume the
+display, and **Ctrl+C** to exit.
+
 ### Using another monitor
 
 Set `GAME_SCREEN_ORIGIN` near the top of `constant.py` to the desktop coordinates
@@ -95,6 +105,15 @@ Escape uses its existing direct-input path.
 
 The `Helper` folder contains the map, page, and strategy data used by the
 automation. Matching templates and reference screenshots are in `Media`.
+
+Workshop builds two 0-0-2 Villages for stacked discounts before buying its
+0-3-1 Super, 0-3-0 Wizard, and 3-0-1 Alchemist. It then upgrades the first
+Village to 0-1-2, sells the temporary second Village, and finishes the first
+at 0-2-2 for camo detection. Keep this purchase/sell order and the tight nook
+placements in `Helper/Map.py`. Tower-action logs report input commands, not
+confirmation that a tower was placed or an upgrade was affordable.
+The live-checked budget used Monkey Knowledge bonuses and $20,200 starting
+cash, with only $37 remaining after setup.
 
 Map-selection pages are defined in `Helper/pageInfo.dat`; navigation derives
 each difficulty's page count from this file. Keep page numbers sequential from

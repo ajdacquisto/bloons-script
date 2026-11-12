@@ -90,6 +90,10 @@ def init():
     global MAP_LOADING_TIMEOUT_DEFLATION
     MAP_LOADING_TIMEOUT_DEFLATION = 30
 
+    # Returning home after a game has taken just over 25 seconds.
+    global RETURN_HOME_TIMEOUT
+    RETURN_HOME_TIMEOUT = 60
+
     # Filename stuff
     # ---
     global HERO_DATA

@@ -92,6 +92,8 @@ scores or timeout best scores and coordinates. `VISION_POLL_INTERVAL` controls
 the delay between unsuccessful polling sweeps (default 0.2 seconds); `STOP_KEY`
 is checked during polling. Set `LOG_LEVEL` to `"WARNING"` in `constant.py` to
 hide informational messages. Screenshots are not saved by this logging.
+After each game, the macro waits up to `RETURN_HOME_TIMEOUT` seconds
+(default 60) for the home screen or free-monkey reward.
 Hero-selection checks use a compact checkmark crop with tolerant color rounding
 so the card artwork beneath the badge does not prevent verification.
 

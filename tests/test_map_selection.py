@@ -52,12 +52,13 @@ class MapSelectionTests(unittest.TestCase):
                     const, init=DEFAULT, MAPS=self.maps, PAGES=self.pages,
                     MAP_SELECTION_MODE=mode, DEFAULT_MAP="Muddy Puddles",
                     DEFAULT_MODE="Deflation", POST_WIN_WAIT=0, MAP_LOADING_TIME=0,
-                    FILE_PREFIX="", BADGE_NAME="badge.png", create=True,
+                    FILE_PREFIX="", BADGE_NAME="badge.png", RETURN_HOME_TIMEOUT=60,
+                    create=True,
                 ),
                 patch.multiple(GUI, check_input_vars=DEFAULT, wait_click=DEFAULT,
                                play_button=DEFAULT, wait=DEFAULT),
                 patch.multiple(Main, wait_for_ui=DEFAULT, navigate=DEFAULT),
-                patch.object(Main, "wait_for_ui_any", return_value=0),
+                patch.object(Main, "wait_for_ui_any", return_value=0) as wait_any,
                 patch.object(Main, "find_rewards_map", return_value=None),
                 patch.object(Main, "beat_map", side_effect=[True, StopIteration]) as beat,
                 patch("builtins.print"),
@@ -69,6 +70,7 @@ class MapSelectionTests(unittest.TestCase):
                 [item.args[0].name for item in beat.call_args_list],
                 ["Tricky Tracks", "Dark Dungeons"],
             )
+            wait_any.assert_called_once_with(("home_play", "collect"), 60)
 
     def test_ordered_selection_wraps_only_playable_maps(self):
         """Ordered selection preserves playable-map order and wraps safely."""

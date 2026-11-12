@@ -756,7 +756,9 @@ def main():
         GUI.wait(1)
 
         try:
-            reward_status = wait_for_ui_any(("home_play", "collect"), 25)
+            reward_status = wait_for_ui_any(
+                ("home_play", "collect"), const.RETURN_HOME_TIMEOUT
+            )
         except TimeoutError as exc:
             raise RuntimeError("Unknown free monkey status. Timed out.") from exc
         match reward_status:

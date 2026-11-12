@@ -1,6 +1,9 @@
 """Verify automatic selection never chooses a map without a strategy."""
 
+import logging
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import DEFAULT, mock_open, patch
 
 import Main
@@ -71,6 +74,21 @@ class MapSelectionTests(unittest.TestCase):
                 ["Tricky Tracks", "Dark Dungeons"],
             )
             wait_any.assert_called_once_with(("home_play", "collect"), 60)
+
+    def test_configure_logging_writes_run_log(self):
+        root = logging.getLogger()
+        saved = root.handlers[:]
+        root.handlers.clear()
+        try:
+            with tempfile.TemporaryDirectory() as log_dir:
+                path = Main.configure_logging(log_dir)
+                logging.getLogger("Main").warning("home timed out")
+                for handler in root.handlers:
+                    handler.close()
+                self.assertEqual(path.parent, Path(log_dir))
+                self.assertIn("home timed out", path.read_text(encoding="utf-8"))
+        finally:
+            root.handlers[:] = saved
 
     def test_ordered_selection_wraps_only_playable_maps(self):
         """Ordered selection preserves playable-map order and wraps safely."""

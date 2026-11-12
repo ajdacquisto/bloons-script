@@ -745,13 +745,13 @@ def main():
             case _:
                 raise ValueError("Invalid Map Selection Mode.")
 
-        print(f"{i+1}.\t{m.name}")
+        LOGGER.info("Game %s: %s", i + 1, m.name)
         navigate(const.PAGES[m.page])
         is_win = beat_map(m)
 
         if is_win:
             money_earned += 66
-        print("Money earned: $", money_earned)
+        LOGGER.info("%s; money earned: $%s", "Win" if is_win else "Loss", money_earned)
 
         GUI.wait(1)
 
@@ -775,5 +775,23 @@ def main():
 
 # end of main
 
+def configure_logging(log_dir=const.LOG_DIR):
+    """Log to the console and a per-run file; return the file path."""
+    log_dir = Path(log_dir)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / time.strftime("macro-%Y%m%d-%H%M%S.log")
+    logging.basicConfig(
+        level=const.LOG_LEVEL, format="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%H:%M:%S",
+        handlers=[logging.StreamHandler(), logging.FileHandler(log_path, encoding="utf-8")],
+    )
+    return log_path
+
+
 if __name__ == "__main__":
-    main()
+    LOGGER.info("Writing log to %s", configure_logging())
+    try:
+        main()
+    except Exception:
+        LOGGER.exception("Macro stopped")
+        raise
